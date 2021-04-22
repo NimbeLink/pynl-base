@@ -16,6 +16,7 @@ from nimbelink.cell.modem.skywire import Skywire
 
 from nimbelink.cell.modem.nanoLibs.gpio import Gpio
 from nimbelink.cell.modem.nanoLibs.sim import Sim
+from nimbelink.cell.modem.nanoLibs.socket import Socket
 
 class SkywireNano(Skywire):
     """A Skywire modem
@@ -38,6 +39,7 @@ class SkywireNano(Skywire):
 
         self._gpio = Gpio(self)
         self._sim = Sim(self)
+        self._socket = Socket(self)
 
     @property
     def gpio(self):
@@ -64,6 +66,19 @@ class SkywireNano(Skywire):
         """
 
         return self._sim
+
+    @property
+    def socket(self):
+        """Gets our socket
+
+        :param self:
+            Self
+
+        :return Socket:
+            Our socket
+        """
+
+        return self._socket
 
     @property
     def versions(self):
