@@ -26,13 +26,13 @@ class Response(object):
         :param result:
             The result of the response
         :param output:
-            An array of generic output lines, sans result
+            Generic output, sans result indicator
 
         :return none:
         """
 
         if output == None:
-            output = []
+            output = ""
 
         self.result = result
         self.output = output
@@ -66,8 +66,8 @@ class Response(object):
 
         string = ""
 
-        for output in self.output:
-            string += "{}\n".format(output)
+        if len(self.output) > 0:
+            string += self.output + "\n"
 
         string += "{}".format(self.result)
 
@@ -86,18 +86,20 @@ class Response(object):
             The response
         """
 
-        # Split the output into individual lines
-        lines = string.replace("\r", "").split("\n")
+        # If there is a final \r\n at the very end, discard it
+        if string.endswith("\r\n"):
+            string = string[:-2]
 
-        # Clear out any blank ones
-        lines = [line for line in lines if len(line) > 0]
+        # Find the last occurrence of \r\n, which would come before our result
+        resultStart = string.rfind("\r\n")
 
-        if len(lines) < 1:
+        # If that failed, this isn't a valid response
+        if resultStart == -1:
             return None
 
-        # Split the lines into general output and the final result
-        output = lines[:-1]
-        result = lines[-1]
+        # Split the string into generic output and the final result
+        output = string[:resultStart]
+        result = string[resultStart + 2:]
 
         # Make the result from the last line
         result = Result.makeFromString(string = result)
