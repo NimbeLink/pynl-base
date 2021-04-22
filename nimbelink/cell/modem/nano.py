@@ -86,22 +86,23 @@ class SkywireNano(Skywire):
         if not response:
             return None
 
+        # Get the version lines
+        versions = response.output.split("\r\n")
+
         # If there aren't two versions, that's a paddlin'
-        if len(response.output) != 2:
+        if len(versions) != 2:
             return None
 
-        versions = []
-
-        for version in response.output:
+        for i in range(len(versions)):
             # Each version follows '#APPVER: <thing>: <version>'
-            fields = version.split(":")
+            fields = versions[i].split(":")
 
             # If that wasn't the case for any version, that's a paddlin'
             if len(fields) != 3:
                 return None
 
             # Make sure we remove any whitespace
-            versions.append((fields[1].strip(), fields[2].strip()))
+            versions[i] = (fields[1].strip(), fields[2].strip())
 
         # Get the modem/co-processor version
         response = self.atInterface.sendCommand("AT+CGMR")
@@ -111,12 +112,12 @@ class SkywireNano(Skywire):
             return None
 
         # If there isn't a single version, that's a paddlin'
-        if len(response.output) != 1:
+        if len(response.output) < 1:
             return None
 
         # The modem version is just a single string, so add our own identifier
         # for it
-        versions.append(("MFW", response.output[0]))
+        versions.append(("MFW", response.output))
 
         return versions
 

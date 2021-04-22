@@ -70,11 +70,7 @@ class Skywire(object):
         if not response:
             return None
 
-        # If there wasn't a single line of response, that's a paddlin'
-        if len(response.output) != 1:
-            return None
-
-        fields = response.output[0].split(",")
+        fields = response.output.split(",")
 
         # If there isn't at least the prefix and the current mode, that's a
         # paddlin'
