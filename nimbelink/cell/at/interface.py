@@ -294,6 +294,147 @@ class AtInterface(object):
 
         return response
 
+    def startPrompt(self, *args, **kwargs):
+        """Starts a prompt command
+
+        :param self:
+            Self
+        :param *args:
+            Positional arguments
+        :param **kwargs:
+            Keyword arguments
+
+        :return Prompt:
+            The prompt
+        """
+
+        return AtInterface.Prompt(self, *args, **kwargs)
+
+    class Prompt:
+        """A prompt for sending dynamic data in an AT command
+        """
+
+        def __init__(self, interface, dynamic):
+            """Creates a new prompt
+
+            :param self:
+                Self
+            :param interface:
+                The AT interface this is on
+            :param dynamic:
+                Whether or not the incoming data will be dynamic
+
+            :return none:
+            """
+
+            self.interface = interface
+            self.dynamic = dynamic
+
+            self.command = None
+
+        def __enter__(self):
+            """Enters the prompt context
+
+            :param self:
+                Self
+
+            :return Prompt:
+                Us
+            """
+
+            return self
+
+        def __exit__(self, type, value, traceback):
+            """Exits the prompt context
+
+            :param self:
+                Self
+            :param type:
+                The type of exception, if any
+            :param value:
+                The value of the exception, if any
+            :param traceback:
+                The exception's traceback, if any
+
+            :return none:
+            """
+
+            pass
+
+        def startCommand(self, command):
+            """Starts a dynamic command
+
+            :param self:
+                Self
+            :param command:
+                The command to send
+
+            :return True:
+                Command started
+            :return False:
+                Failed to start command
+            """
+
+            self.command = command
+
+            # Send the command
+            if not self.interface._beginCommand(command = command):
+                return False
+
+            return True
+
+        def writeData(self, data):
+            """Writes command data
+
+            :param self:
+                Self
+            :param data:
+                The data to write
+
+            :return True:
+                Data written
+            :return False:
+                Failed to write data
+            """
+
+            self.interface.logger.info("Sending '{}'".format(data))
+
+            if not self.interface._writeRaw(data):
+                return False
+
+            return True
+
+        def finish(self, timeout = None):
+            """Finishes the prompt
+
+            :param self:
+                Self
+            :param timeout:
+                How long to wait for the response
+
+            :return None:
+                Failed to get response
+            :return Response:
+                The response
+            """
+
+            # If we're a dynamic command, send the terminator
+            if self.dynamic:
+                self.interface._writeRaw("\x1A".encode())
+
+            # Wait for a response
+            response = self.interface._waitForResponse(timeout = timeout)
+
+            # If that failed, just use that
+            if response == None:
+                return None
+
+            # Filter out the command
+            if self.command != None:
+                AtInterface._filterCommand(command = self.command, response = response)
+
+            return response
+
     def waitUrc(self, urc, timeout = None):
         """Waits for an asynchronous output
 
