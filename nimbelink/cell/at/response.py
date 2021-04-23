@@ -18,7 +18,10 @@ class Response(object):
     """A response to an AT command
     """
 
-    def __init__(self, result, output = None):
+    DefaultNewLine = "\r\n"
+    """The default line endings to use"""
+
+    def __init__(self, result, output = None, newLine = None):
         """Creates a response
 
         :param self:
@@ -34,8 +37,13 @@ class Response(object):
         if output == None:
             output = ""
 
+        if newLine == None:
+            newLine = Response.DefaultNewLine
+
         self.result = result
         self.output = output
+
+        self._newLine = newLine
 
     def __bool__(self):
         """Gets a boolean representation of the response
@@ -67,18 +75,20 @@ class Response(object):
         string = ""
 
         if len(self.output) > 0:
-            string += self.output + "\n"
+            string += self.output + self._newLine
 
         string += "{}".format(self.result)
 
         return string
 
     @staticmethod
-    def makeFromString(string):
+    def makeFromString(string, newLine = None):
         """Creates a new response from output
 
         :param string:
             The raw string output to parse
+        :param newLine:
+            The newline style to use
 
         :return None:
             Failed to parse response
@@ -86,12 +96,15 @@ class Response(object):
             The response
         """
 
+        if newLine == None:
+            newLine = Response.DefaultNewLine
+
         # If there is a final \r\n at the very end, discard it
-        if string.endswith("\r\n"):
+        if string.endswith(newLine):
             string = string[:-2]
 
         # Find the last occurrence of \r\n, which would come before our result
-        resultStart = string.rfind("\r\n")
+        resultStart = string.rfind(newLine)
 
         # If that failed, this isn't a valid response
         if resultStart == -1:
