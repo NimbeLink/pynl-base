@@ -27,6 +27,9 @@ class AtInterface(object):
     DefaultTimeout = 5.0
     """A default timeout for interacting with a modem"""
 
+    NewLine = "\r\n"
+    """The line endings to expect"""
+
     def __init__(self, *args, **kwargs):
         """Creates a new AT interface
 
@@ -85,6 +88,78 @@ class AtInterface(object):
         if self.device.timeout != timeout:
             self.device.timeout = timeout
 
+    def _getLines(self, timeout = None):
+        """Gets lines from the device
+
+        Because this function uses 'yield' to return lines, the provided timeout
+        will be used for the *entire* handling of lines. In other words, if you
+        are given a line while using this function and come back to receive
+        another line, the timeout will continue to be relative to when the
+        function was first entered, prior to the previous line being returned.
+
+        :param self:
+            Self
+        :param timeout:
+            How long to wait for lines
+
+        :yield String:
+            The next line of text
+
+        :return none:
+        """
+
+        if timeout == None:
+            timeout = AtInterface.DefaultTimeout
+
+        self._setTimeout(timeout = timeout)
+
+        # Allow a zero-second timeout to still potentially read input
+        startTime = None
+
+        data = ""
+
+        while True:
+            now = time.time()
+
+            # If this is our first time through, note when we started
+            if startTime == None:
+                startTime = now
+
+            # If we've timed out, stop
+            if (now - startTime) > timeout:
+                break
+
+            # Get another line of text
+            newData = self.device.readline()
+
+            # If we didn't get anything, keep waiting
+            if (newData == None) or (len(newData) < 1):
+                continue
+
+            # Got another line
+            yield newData.decode()
+
+    def _writeRaw(self, data):
+        """Writes raw data
+
+        :param self:
+            Self
+        :param data:
+            The data to write
+
+        :return True:
+            Data written
+        :return False:
+            Failed to write data
+        """
+
+        if self.device.write(data) != len(data):
+            self.logger.error("Failed to write '{}'".format(data))
+
+            return False
+
+        return True
+
     def _waitForResponse(self, timeout = None):
         """Waits for a certain response
 
@@ -99,40 +174,31 @@ class AtInterface(object):
             The response
         """
 
-        if timeout == None:
-            timeout = AtInterface.DefaultTimeout
+        data = ""
 
-        self._setTimeout(timeout = timeout)
-
-        startTime = time.time()
-
-        read = ""
-
-        while True:
-            # If we've timed out, stop
-            if (time.time() - startTime) > timeout:
-                return None
-
-            # Get another line of text
-            moreRead = self.device.readline().decode()
-
-            # If we didn't get anything, keep waiting
-            if (moreRead == None) or (len(moreRead) < 1):
-                continue
-
+        for line in self._getLines(timeout = timeout):
             # Note the additional contents
-            read += moreRead
+            data += line
 
             # Try to get a response from that
-            response = Response.makeFromString(read)
+            response = Response.makeFromString(string = data)
 
             # If this is a final result, return it
             if response != None:
+                self.logger.info("Receive '{}'".format(response))
+
                 return response
+
+        self.logger.error("Timeout")
+
+        # We must not have gotten a full response
+        return None
 
     def sendCommand(self, command, timeout = None):
         """Sends a command to the AT interface
 
+        :param self:
+            Self
         :param command:
             Command to send
         :param timeout:
@@ -143,9 +209,6 @@ class AtInterface(object):
         :return Response:
             The response
         """
-
-        if timeout == None:
-            timeout = AtInterface.DefaultTimeout
 
         # If the command doesn't have proper line endings, add them
         if not command.endswith("\r"):
@@ -166,15 +229,11 @@ class AtInterface(object):
 
         # If that failed, just use that
         if response == None:
-            self.logger.error("Timeout")
-
             return None
 
         # Try to filter out the command itself, if present
         if (len(response.output) > 0) and (response.output[0] == command.rstrip()):
             response.output.pop(0)
-
-        self.logger.info("Response is '{}'".format(response))
 
         return response
 
@@ -197,25 +256,10 @@ class AtInterface(object):
             The URC, sans line endings
         """
 
-        if timeout == None:
-            timeout = AtInterface.DefaultTimeout
-
-        self._setTimeout(timeout = timeout)
-
-        startTime = time.time()
-
-        while True:
-            # If we've timed out, stop
-            if (time.time() - startTime) > timeout:
-                return None
-
-            # Get another line of text
-            read = self.device.readline().decode()
-
-            # If that timed out, stop
-            if (read == None) or (len(read) < 1):
-                return None
-
+        for line in self._getLines(timeout = timeout):
             # If the URC matches, great, got it
-            if re.match(urc, read) != None:
-                return read.rstrip("\r\n")
+            if re.match(urc, line) != None:
+                return line
+
+        # Must not have gotten our URC
+        return None
