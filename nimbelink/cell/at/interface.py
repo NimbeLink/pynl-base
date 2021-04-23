@@ -194,6 +194,36 @@ class AtInterface(object):
         # We must not have gotten a full response
         return None
 
+    @staticmethod
+    def _filterCommand(command, response):
+        """Filters out an echoed command from a response
+
+        :param command:
+            The command
+        :param response:
+            The response
+
+        :return none:
+        """
+
+        # Try to filter out the command itself, if present
+        commandStart = response.output.find(command)
+
+        # If the command wasn't echoed back, nothing to do
+        if commandStart == -1:
+            return
+
+        # Skip over the command and the line endings automatically appended
+        # after it
+        outputStart = commandStart + len(command) + 2
+
+        # If there's also additional line endings due to us manually appending
+        # the carriage return, filter that too
+        if not command.endswith("\r"):
+            outputStart += 1
+
+        response.output = response.output[outputStart:]
+
     def sendCommand(self, command, timeout = None):
         """Sends a command to the AT interface
 
@@ -231,9 +261,8 @@ class AtInterface(object):
         if response == None:
             return None
 
-        # Try to filter out the command itself, if present
-        if (len(response.output) > 0) and (response.output[0] == command.rstrip()):
-            response.output.pop(0)
+        # Filter out the command
+        AtInterface._filterCommand(command = command, response = response)
 
         return response
 
