@@ -166,11 +166,11 @@ class AtInterface(object):
         """
 
         if self.device.write(data) != len(data):
-            self.logger.error("Failed to write '{}'".format(data))
+            self.logger.error("Failed to write {}".format(ascii(data.decode())))
 
             return False
 
-        self.logger.debug("Wrote {}".format(ascii(data)))
+        self.logger.debug("Wrote {}".format(ascii(data.decode())))
 
         return True
 
@@ -237,7 +237,7 @@ class AtInterface(object):
 
             # If this is a final result, return it
             if response != None:
-                self.logger.info("Receive '{}'".format(response))
+                self.logger.info("Received {}".format(ascii("{}".format(response))))
 
                 return response
 
@@ -412,7 +412,7 @@ class AtInterface(object):
                 Failed to write data
             """
 
-            self.interface.logger.info("Sending '{}'".format(data))
+            self.interface.logger.info("Sending  {}".format(ascii(data)))
 
             if not self.interface._writeRaw(data):
                 return False
