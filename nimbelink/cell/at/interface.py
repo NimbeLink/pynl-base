@@ -160,6 +160,44 @@ class AtInterface(object):
 
         return True
 
+    def _beginCommand(self, command):
+        """Sends a command to the AT interface without expecting a response
+
+        :param command:
+            Command to send
+
+        :return True:
+            Command sent
+        :return False:
+            Failed to send command
+        """
+
+        # First try to have locked control over the interface by sending the
+        # 'AT'
+        if not self._writeRaw("AT".encode()):
+            return False
+
+        # Handle any buffered URCs, which -- since we entered the 'AT' -- we
+        # expect to not show up anymore until we're done with the command's full
+        # entry and response
+        for line in self._getLines(timeout = 0):
+            pass
+
+        # Drop the command's 'AT', if any
+        if command[:2].upper() == "AT":
+            command = command[2:]
+
+        # Drop provided line endings and use our own
+        command = command.rstrip(self.NewLine) + "\r"
+
+        self.logger.info("Sending  'AT{}".format(ascii(command)[1:-1]))
+
+        # Write the command
+        if not self._writeRaw(command.encode()):
+            return False
+
+        return True
+
     def _waitForResponse(self, timeout = None):
         """Waits for a certain response
 
@@ -240,18 +278,8 @@ class AtInterface(object):
             The response
         """
 
-        # If the command doesn't have proper line endings, add them
-        if not command.endswith("\r"):
-            command += "\r"
-
-        self._clear()
-
-        self.logger.info("Sending '{}'".format(command.rstrip()))
-
-        # Write the command
-        if self.device.write(command.encode()) != len(command):
-            self.logger.error("Failed to send")
-
+        # Send the command
+        if not self._beginCommand(command = command):
             return None
 
         # Wait for a response
