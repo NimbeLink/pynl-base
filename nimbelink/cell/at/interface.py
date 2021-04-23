@@ -27,7 +27,10 @@ class AtInterface(object):
     DefaultTimeout = 5.0
     """A default timeout for interacting with a modem"""
 
-    NewLine = "\r\n"
+    SendNewLine = "\r"
+    """The line engins to use to send commands"""
+
+    NewLine = Response.DefaultNewLine
     """The line endings to expect"""
 
     def __init__(self, *args, **kwargs):
@@ -199,7 +202,7 @@ class AtInterface(object):
             command = command[2:]
 
         # Drop provided line endings and use our own
-        command = command.rstrip(self.NewLine) + "\r"
+        command = command.rstrip(self.NewLine) + self.SendNewLine
 
         self.logger.info("Sending  'AT{}".format(ascii(command)[1:-1]))
 
@@ -230,7 +233,7 @@ class AtInterface(object):
             data += line
 
             # Try to get a response from that
-            response = Response.makeFromString(string = data)
+            response = Response.makeFromString(string = data, newLine = self.NewLine)
 
             # If this is a final result, return it
             if response != None:
@@ -243,10 +246,11 @@ class AtInterface(object):
         # We must not have gotten a full response
         return None
 
-    @staticmethod
-    def _filterCommand(command, response):
+    def _filterCommand(self, command, response):
         """Filters out an echoed command from a response
 
+        :param self:
+            Self
         :param command:
             The command
         :param response:
@@ -268,7 +272,7 @@ class AtInterface(object):
 
         # If there's also additional line endings due to us manually appending
         # the carriage return, filter that too
-        if not command.endswith("\r"):
+        if not command.endswith(self.SendNewLine):
             outputStart += 1
 
         response.output = response.output[outputStart:]
@@ -301,7 +305,7 @@ class AtInterface(object):
             return None
 
         # Filter out the command
-        AtInterface._filterCommand(command = command, response = response)
+        self._filterCommand(command = command, response = response)
 
         return response
 
@@ -441,8 +445,8 @@ class AtInterface(object):
                 return None
 
             # Filter out the command
-            if self.command != None:
-                AtInterface._filterCommand(command = self.command, response = response)
+            if self._command != None:
+                self.interface._filterCommand(command = self.command, response = response)
 
             return response
 
