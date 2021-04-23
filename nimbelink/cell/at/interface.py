@@ -50,6 +50,7 @@ class AtInterface(object):
         except SyntaxError:
             self.device = serial.Serial(*args, **kwargs)
 
+        # Clear out to begin with
         self._clear()
 
     def _clear(self):
@@ -81,8 +82,8 @@ class AtInterface(object):
 
         # Setting the serial port's timeout can cause issues with buffering of
         # input/output, so only set it if necessary
-        #if self.device.timeout != timeout:
-        #    self.device.timeout = timeout
+        if self.device.timeout != timeout:
+            self.device.timeout = timeout
 
     def _waitForResponse(self, timeout = None):
         """Waits for a certain response
