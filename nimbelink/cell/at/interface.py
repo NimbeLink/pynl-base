@@ -53,6 +53,8 @@ class AtInterface(object):
         except SyntaxError:
             self.device = serial.Serial(*args, **kwargs)
 
+        self.buffer = bytearray()
+
         # Clear out to begin with
         self._clear()
 
@@ -116,8 +118,6 @@ class AtInterface(object):
         # Allow a zero-second timeout to still potentially read input
         startTime = None
 
-        data = ""
-
         while True:
             now = time.time()
 
@@ -130,14 +130,23 @@ class AtInterface(object):
                 break
 
             # Get another line of text
-            newData = self.device.readline()
+            self.buffer.extend(self.device.readline())
 
-            # If we didn't get anything, keep waiting
-            if (newData == None) or (len(newData) < 1):
+            # If the data doesn't actually contain a newline, keep waiting
+            #
+            # There appear to be issues with readline() that aren't strictly
+            # documented, where it's ending and returning a non-empty buffer
+            # that *doesn't* contain a newline in it.
+            if self.buffer.rfind(b'\n') < 0:
                 continue
 
+            self.logger.debug("Read  {}".format(ascii(self.buffer.decode())))
+
             # Got another line
-            yield newData.decode()
+            yield self.buffer.decode()
+
+            # We consumed a whole line, so start over
+            self.buffer.clear()
 
     def _writeRaw(self, data):
         """Writes raw data
@@ -157,6 +166,8 @@ class AtInterface(object):
             self.logger.error("Failed to write '{}'".format(data))
 
             return False
+
+        self.logger.debug("Wrote {}".format(ascii(data)))
 
         return True
 
