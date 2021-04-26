@@ -281,13 +281,13 @@ class Xmodem:
 
         return True
 
-    def transfer(self, file, packetSize = None):
-        """Transfers a file using XMODEM
+    def transfer(self, data, packetSize = None):
+        """Transfers data using XMODEM
 
         :param self:
             Self
-        :param file:
-            An opened file
+        :param data:
+            Bytes-like data to send
         :param packetSize:
             The size of the packets to use
 
@@ -324,7 +324,7 @@ class Xmodem:
             time.sleep(0.01)
 
             # Try to read the next chunk of data
-            packetData = file.read(packetSize)
+            packetData = data[count : count + packetSize]
 
             # If we're out of data, move on
             if len(packetData) < 1:
@@ -335,7 +335,7 @@ class Xmodem:
             if not self._sendData(packetData = packetData):
                 break
 
-            count = count + 1
+            count += len(packetData)
 
         # Let the device know we're done
         self._endTransmission()
