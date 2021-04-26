@@ -27,7 +27,10 @@ class AtInterface(object):
     DefaultTimeout = 5.0
     """A default timeout for interacting with a modem"""
 
-    NewLine = "\r\n"
+    SendNewLine = "\r"
+    """The line engins to use to send commands"""
+
+    NewLine = Response.DefaultNewLine
     """The line endings to expect"""
 
     def __init__(self, *args, **kwargs):
@@ -43,17 +46,17 @@ class AtInterface(object):
         :return none:
         """
 
-        self.logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(__name__)
 
         # Try to make the serial port with our default timeout
         try:
-            self.device = serial.Serial(*args, **kwargs, timeout = AtInterface.DefaultTimeout)
+            self._device = serial.Serial(*args, **kwargs, timeout = AtInterface.DefaultTimeout)
 
         # If it appears the user specified their own timeout, just use that
         except SyntaxError:
-            self.device = serial.Serial(*args, **kwargs)
+            self._device = serial.Serial(*args, **kwargs)
 
-        self.buffer = bytearray()
+        self._buffer = bytearray()
 
         # Clear out to begin with
         self._clear()
@@ -68,14 +71,28 @@ class AtInterface(object):
         """
 
         while True:
-            self.device.reset_output_buffer()
-            self.device.reset_input_buffer()
+            self._device.reset_output_buffer()
+            self._device.reset_input_buffer()
 
-            if len(self.device.read_all()) < 1:
+            if len(self._device.read_all()) < 1:
                 break
 
-    def _setTimeout(self, timeout):
-        """Sets the device's serial port timeout
+    @property
+    def readTimeout(self):
+        """Gets our serial port's read timeout
+
+        :param self:
+            Self
+
+        :return Integer:
+            Our serial port's read timeout
+        """
+
+        return self._device.timeout
+
+    @readTimeout.setter
+    def readTimeout(self, timeout):
+        """Sets our serial port's read timeout
 
         :param self:
             Self
@@ -87,8 +104,21 @@ class AtInterface(object):
 
         # Setting the serial port's timeout can cause issues with buffering of
         # input/output, so only set it if necessary
-        if self.device.timeout != timeout:
-            self.device.timeout = timeout
+        if self._device.timeout != timeout:
+            self._device.timeout = timeout
+
+    @property
+    def baudRate(self):
+        """Gets our serial port's baud rate
+
+        :param self:
+            Self
+
+        :return Integer:
+            Our serial port's read timeout
+        """
+
+        return self._device.baudrate
 
     def _getLines(self, timeout = None):
         """Gets lines from the device
@@ -113,7 +143,7 @@ class AtInterface(object):
         if timeout == None:
             timeout = AtInterface.DefaultTimeout
 
-        self._setTimeout(timeout = timeout)
+        self.readTimeout = timeout = timeout
 
         # Allow a zero-second timeout to still potentially read input
         startTime = None
@@ -130,23 +160,23 @@ class AtInterface(object):
                 break
 
             # Get another line of text
-            self.buffer.extend(self.device.readline())
+            self._buffer.extend(self._device.readline())
 
             # If the data doesn't actually contain a newline, keep waiting
             #
             # There appear to be issues with readline() that aren't strictly
             # documented, where it's ending and returning a non-empty buffer
             # that *doesn't* contain a newline in it.
-            if self.buffer.rfind(b'\n') < 0:
+            if self._buffer.rfind(b'\n') < 0:
                 continue
 
-            self.logger.debug("Read  {}".format(ascii(self.buffer.decode())))
+            self._logger.debug("Read  {}".format(ascii(self._buffer.decode())))
 
             # Got another line
-            yield self.buffer.decode()
+            yield self._buffer.decode()
 
             # We consumed a whole line, so start over
-            self.buffer.clear()
+            self._buffer.clear()
 
     def _writeRaw(self, data):
         """Writes raw data
@@ -162,12 +192,12 @@ class AtInterface(object):
             Failed to write data
         """
 
-        if self.device.write(data) != len(data):
-            self.logger.error("Failed to write '{}'".format(data))
+        if self._device.write(data) != len(data):
+            self._logger.error("Failed to write {}".format(ascii(data.decode())))
 
             return False
 
-        self.logger.debug("Wrote {}".format(ascii(data)))
+        self._logger.debug("Wrote {}".format(ascii(data.decode())))
 
         return True
 
@@ -199,9 +229,9 @@ class AtInterface(object):
             command = command[2:]
 
         # Drop provided line endings and use our own
-        command = command.rstrip(self.NewLine) + "\r"
+        command = command.rstrip(self.NewLine) + self.SendNewLine
 
-        self.logger.info("Sending  'AT{}".format(ascii(command)[1:-1]))
+        self._logger.info("Sending  'AT{}".format(ascii(command)[1:-1]))
 
         # Write the command
         if not self._writeRaw(command.encode()):
@@ -230,23 +260,24 @@ class AtInterface(object):
             data += line
 
             # Try to get a response from that
-            response = Response.makeFromString(string = data)
+            response = Response.makeFromString(string = data, newLine = self.NewLine)
 
             # If this is a final result, return it
             if response != None:
-                self.logger.info("Receive '{}'".format(response))
+                self._logger.info("Received {}".format(ascii("{}".format(response))))
 
                 return response
 
-        self.logger.error("Timeout")
+        self._logger.error("Timeout")
 
         # We must not have gotten a full response
         return None
 
-    @staticmethod
-    def _filterCommand(command, response):
+    def _filterCommand(self, command, response):
         """Filters out an echoed command from a response
 
+        :param self:
+            Self
         :param command:
             The command
         :param response:
@@ -268,7 +299,7 @@ class AtInterface(object):
 
         # If there's also additional line endings due to us manually appending
         # the carriage return, filter that too
-        if not command.endswith("\r"):
+        if not command.endswith(self.SendNewLine):
             outputStart += 1
 
         response.output = response.output[outputStart:]
@@ -301,7 +332,7 @@ class AtInterface(object):
             return None
 
         # Filter out the command
-        AtInterface._filterCommand(command = command, response = response)
+        self._filterCommand(command = command, response = response)
 
         return response
 
@@ -338,10 +369,10 @@ class AtInterface(object):
             :return none:
             """
 
-            self.interface = interface
-            self.dynamic = dynamic
+            self._interface = interface
+            self._dynamic = dynamic
 
-            self.command = None
+            self._command = None
 
         def __enter__(self):
             """Enters the prompt context
@@ -386,10 +417,10 @@ class AtInterface(object):
                 Failed to start command
             """
 
-            self.command = command
+            self._command = command
 
             # Send the command
-            if not self.interface._beginCommand(command = command):
+            if not self._interface._beginCommand(command = command):
                 return False
 
             return True
@@ -408,9 +439,9 @@ class AtInterface(object):
                 Failed to write data
             """
 
-            self.interface.logger.info("Sending '{}'".format(data))
+            self._interface._logger.info("Sending  {}".format(ascii(data)))
 
-            if not self.interface._writeRaw(data):
+            if not self._interface._writeRaw(data):
                 return False
 
             return True
@@ -430,19 +461,19 @@ class AtInterface(object):
             """
 
             # If we're a dynamic command, send the terminator
-            if self.dynamic:
-                self.interface._writeRaw("\x1A".encode())
+            if self._dynamic:
+                self._interface._writeRaw("\x1A".encode())
 
             # Wait for a response
-            response = self.interface._waitForResponse(timeout = timeout)
+            response = self._interface._waitForResponse(timeout = timeout)
 
             # If that failed, just use that
             if response == None:
                 return None
 
             # Filter out the command
-            if self.command != None:
-                AtInterface._filterCommand(command = self.command, response = response)
+            if self._command != None:
+                self._interface._filterCommand(command = self._command, response = response)
 
             return response
 
