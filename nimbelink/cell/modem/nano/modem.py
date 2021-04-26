@@ -14,9 +14,9 @@
 
 from nimbelink.cell.modem.skywire import Skywire
 
-from nimbelink.cell.modem.nanoLibs.gpio import Gpio
-from nimbelink.cell.modem.nanoLibs.sim import Sim
-from nimbelink.cell.modem.nanoLibs.socket import Socket
+from nimbelink.cell.modem.nano.gpio import Gpio
+from nimbelink.cell.modem.nano.sim import Sim
+from nimbelink.cell.modem.nano.socket import Socket
 
 class SkywireNano(Skywire):
     """A Skywire modem
