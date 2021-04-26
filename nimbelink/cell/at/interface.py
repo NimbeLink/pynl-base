@@ -134,6 +134,33 @@ class AtInterface(object):
 
         self._device.baudrate = baudRate
 
+    @property
+    def flowControl(self):
+        """Gets our serial port's flow control
+
+        :param self:
+            Self
+
+        :return Bool:
+            Whether or not RTS/CTS flow control is on
+        """
+
+        return self._device.baudrate
+
+    @flowControl.setter
+    def flowControl(self, flowControl):
+        """Sets our serial port's flow control
+
+        :param self:
+            Self
+        :param flowControl:
+            Whether or not to use RTS/CTS flow control
+
+        :return none:
+        """
+
+        self._device.rtscts = flowControl
+
     def _getLines(self, timeout = None):
         """Gets lines from the device
 
