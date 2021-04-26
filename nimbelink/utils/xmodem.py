@@ -12,6 +12,7 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
+import logging
 import time
 
 class Xmodem:
@@ -144,12 +145,11 @@ class Xmodem:
         :return none:
         """
 
-        self.device = device
+        self._logger = logging.getLogger(__name__)
 
-        # Assume we should be mostly quiet
-        self.verbose = False
+        self._device = device
 
-    def clearDevice(self):
+    def _clear(self):
         """Clears our device's input/output buffers
 
         :param self:
@@ -158,11 +158,11 @@ class Xmodem:
         :return none:
         """
 
-        while len(self.device.read_all()) > 0:
-            self.device.reset_output_buffer()
-            self.device.reset_input_buffer()
+        while len(self._device.read_all()) > 0:
+            self._device.reset_output_buffer()
+            self._device.reset_input_buffer()
 
-    def startTransmission(self):
+    def _startTransmission(self):
         """Starts XMODEM transmission
 
         :param self:
@@ -179,7 +179,7 @@ class Xmodem:
 
         # Try for a bit to get our initial NAK byte
         for i in range(5):
-            start = self.device.read()
+            start = self._device.read()
 
             # If we got the initial NAK, great, move on
             if (len(start) > 0) and (start[0] == Xmodem.Packet.Nak):
@@ -187,11 +187,11 @@ class Xmodem:
 
             time.sleep(1)
 
-        print("Failed to get starting NAK ({})".format(start.decode()))
+        self._logger.error("Failed to get starting NAK ({})".format(start.decode()))
 
         return False
 
-    def sendData(self, packetData):
+    def _sendData(self, packetData):
         """Sends a packet to a device
 
         :param self:
@@ -211,12 +211,10 @@ class Xmodem:
             packetId = self.packetId
         )
 
-        # If we're being verbose, print the packet out
-        if self.verbose:
-            print(packet.hex())
+        self._logger.debug(packet.hex())
 
         # If we aren't using flow control, chunk the data
-        if not self.device.rtscts:
+        if not self._device.rtscts:
             writeLength = 0
 
             bytes = list(packet)
@@ -227,30 +225,30 @@ class Xmodem:
 
                 time.sleep(0.1)
 
-                writeLength += self.device.write(bytes[0:Xmodem.ChunkSize])
+                writeLength += self._device.write(bytes[0:Xmodem.ChunkSize])
 
                 bytes = bytes[Xmodem.ChunkSize:]
 
         # Else, just spit everything out
         else:
-            writeLength = self.device.write(packet)
+            writeLength = self._device.write(packet)
 
         # If that failed, that's a paddlin'
         if writeLength != len(packet):
-            print("Failed to send all bytes ({})".format(writeLength))
+            self._logger.error("Failed to send all bytes ({})".format(writeLength))
             return False
 
         # Wait for a response
-        response = self.device.read(1)
+        response = self._device.read(1)
 
         # If that failed, that's a paddlin'
         if (response == None) or (len(response) < 1):
-            print("Failed to get response")
+            self._logger.error("Failed to get response")
             return False
 
         # If it wasn't acknowledged, that's a paddlin'
         if response[0] != Xmodem.Packet.Ack:
-            print("Failed to get ACK ({})".format(response[0]))
+            self._logger.error("Failed to get ACK ({})".format(response[0]))
             return False
 
         # Use the next packet ID next time
@@ -258,7 +256,7 @@ class Xmodem:
 
         return True
 
-    def endTransmission(self):
+    def _endTransmission(self):
         """Ends XMODEM transmission
 
         :param self:
@@ -269,11 +267,11 @@ class Xmodem:
         """
 
         # Stop transmission
-        self.device.write([Xmodem.Packet.EndOfTransmission])
+        self._device.write([Xmodem.Packet.EndOfTransmission])
 
         return True
 
-    def transfer(self, file, packetSize = 1024):
+    def transfer(self, file, packetSize = None):
         """Transfers a file using XMODEM
 
         :param self:
@@ -283,7 +281,7 @@ class Xmodem:
         :param packetSize:
             The size of the packets to use
 
-        :raise Exception:
+        :raise ValueError:
             Invalid packet size
 
         :return True
@@ -292,8 +290,11 @@ class Xmodem:
             Failed to send file
         """
 
+        if packetSize == None:
+            packetSize = 1024
+
         if packetSize not in Xmodem.Packet.TransferSizes:
-            raise Exception("Can't use packet size of {}!".format(packetSize))
+            raise ValueError("Can't use packet size of {}!".format(packetSize))
 
         # Guilty until proven innocent
         success = False
@@ -301,14 +302,13 @@ class Xmodem:
         count = 0
 
         # Make sure nothing is left over
-        self.clearDevice()
+        self._clear()
 
         # If we fail to kick off transmission, that's a paddlin'
-        if not self.startTransmission():
-            print("Failed to start transmission")
+        if not self._startTransmission():
             return False
 
-        self.clearDevice()
+        self._clear()
 
         while True:
             time.sleep(0.01)
@@ -318,19 +318,16 @@ class Xmodem:
 
             # If we're out of data, move on
             if len(packetData) < 1:
-                print("No more data, done!")
-
                 success = True
                 break
 
             # If we fail to send the data, stop
-            if not self.sendData(packetData = packetData):
-                print("Failed to send packet {}".format(count))
+            if not self._sendData(packetData = packetData):
                 break
 
             count = count + 1
 
         # Let the device know we're done
-        self.endTransmission()
+        self._endTransmission()
 
         return success
