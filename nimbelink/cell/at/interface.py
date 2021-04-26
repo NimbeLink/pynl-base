@@ -120,6 +120,20 @@ class AtInterface(object):
 
         return self._device.baudrate
 
+    @baudRate.setter
+    def baudRate(self, baudRate):
+        """Sets our serial port's baud rate
+
+        :param self:
+            Self
+        :param baudRate:
+            The baud rate to use
+
+        :return none:
+        """
+
+        self._device.baudrate = baudRate
+
     def _getLines(self, timeout = None):
         """Gets lines from the device
 
