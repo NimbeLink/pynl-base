@@ -12,6 +12,8 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
+from nimbelink.cell.modem.skywire import Skywire
+
 class Sim:
     """Skywire Nano SIM resources
     """
@@ -41,14 +43,16 @@ class Sim:
         :param index:
             Which SIM to select
 
-        :raise IOError:
+        :raise Skywire.AtError:
             Failed to select SIM
 
         :return none:
         """
 
-        if not self._nano.at.sendCommand("AT#SIMSELECT={}".format(index)):
-            raise IOError("Failed to set SIM index")
+        response = self._nano.at.sendCommand("AT#SIMSELECT={}".format(index))
+
+        if not response:
+            raise Skywire.AtError(response)
 
         return True
 
@@ -59,7 +63,7 @@ class Sim:
         :param self:
             Self
 
-        :raise IOError:
+        :raise Skywire.AtError:
             Failed to get ICCID
 
         :return String:
@@ -68,7 +72,10 @@ class Sim:
 
         response = self._nano.at.sendCommand("AT#ICCID?")
 
-        if not response or (len(response.output) < 1):
-            raise IOError("Failed to query ICCID")
+        if not response:
+            raise Skywire.AtError(response)
+
+        if len(response.output) < 1:
+            raise Skywire.AtError(response, "ICCID not in response")
 
         return response.output

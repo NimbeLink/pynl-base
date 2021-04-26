@@ -12,6 +12,8 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
+from nimbelink.cell.modem.skywire import Skywire
+
 class Gpio:
     """Skywire Nano GPIO resources
     """
@@ -98,7 +100,10 @@ class Gpio:
         :param thing:
             The response to the command
 
-        :return :
+        :return None:
+            Failed to parse parameters
+        :return Array of Integers:
+            The GPIO thing values
         """
 
         # The string in the response will be in bitwise order -- as if printing
@@ -143,11 +148,10 @@ class Gpio:
 
         :raise ValueError:
             GPIO and configuration lists do not match
-
-        :return True:
-            GPIOs configured
-        :return False:
+        :raise Skywire.AtError:
             Failed to configure GPIOs
+
+        :return none:
         """
 
         # Make sure their lists are the same length
@@ -162,9 +166,7 @@ class Gpio:
 
         # If that failed, that's a paddlin'
         if not response:
-            return False
-
-        return True
+            raise Skywire.AtError(response)
 
     def getConfigs(self, gpios):
         """Gets GPIO configurations
@@ -193,11 +195,10 @@ class Gpio:
 
         :raise ValueError:
             GPIO and state lists do not match
-
-        :return True:
-            GPIOs set
-        :return False:
+        :raise Skywire.AtError:
             Failed to set GPIOs
+
+        :return none:
         """
 
         # Make sure their lists are the same length
@@ -212,9 +213,7 @@ class Gpio:
 
         # If that failed, that's a paddlin'
         if not response:
-            return False
-
-        return True
+            raise Skywire.AtError(response)
 
     def read(self, gpios):
         """Reads GPIO states
@@ -224,8 +223,9 @@ class Gpio:
         :param gpios:
             A list of the GPIOs to query
 
-        :return None:
+        :raise Skywire.AtError:
             Failed to query GPIO states
+
         :return Array of Integers:
             The GPIO states
         """
@@ -238,18 +238,18 @@ class Gpio:
 
         # If that failed, that's a paddlin'
         if not response:
-            return None
+            raise Skywire.AtError(response)
 
         # If the response doesn't have an output, that's a paddlin'
         if len(response.output) < 1:
-            return None
+            raise Skywire.AtError(response, "GPIO states not in response")
 
         # The response is in the form of '#GPIO: <value(s)>'
         fields = response.output.split(":")
 
         # If that's not the case, that's a paddlin'
         if len(fields) != 2:
-            return None
+            raise Skywire.AtError(response, "Invalid GPIO states")
 
         # Parse the response and get the states
         return self._parseParameter(gpios, fields[1].strip())
