@@ -22,7 +22,7 @@ class SkywireNano(Skywire):
     """A Skywire modem
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, kernelLogDevice = None, **kwargs):
         """Creates a new Skywire Nano modem
 
         :param self:
@@ -31,6 +31,8 @@ class SkywireNano(Skywire):
             Positional arguments
         :param **kwargs:
             Keyword arguments
+        :param kernelLogDevice:
+            A serial port for our kernel logging output
 
         :return none:
         """
@@ -40,6 +42,8 @@ class SkywireNano(Skywire):
         self._gpio = Gpio(self)
         self._sim = Sim(self)
         self._socket = Socket(self)
+
+        self._kernelLogDevice = kernelLogDevice
 
     @property
     def gpio(self):
