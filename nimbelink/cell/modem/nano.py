@@ -102,7 +102,7 @@ class SkywireNano(Skywire):
             raise IOError("Failed to get app versions")
 
         # Get the version lines
-        versions = response.output.split("\r\n")
+        versions = response.output.split(self.at.NewLine)
 
         # If there aren't two versions, that's a paddlin'
         if len(versions) != 2:
