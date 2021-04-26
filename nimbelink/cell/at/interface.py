@@ -24,6 +24,12 @@ class AtInterface(object):
     modems
     """
 
+    class CommError(Exception):
+        """An error that occurs when AT communication with a device fails
+        """
+
+        pass
+
     DefaultTimeout = 5.0
     """A default timeout for interacting with a modem"""
 
@@ -227,20 +233,16 @@ class AtInterface(object):
         :param data:
             The data to write
 
-        :return True:
-            Data written
-        :return False:
+        :raise CommError:
             Failed to write data
+
+        :return none:
         """
 
         if self._device.write(data) != len(data):
-            self._logger.error("Failed to write {}".format(ascii(data.decode())))
-
-            return False
+            raise AtInterface.CommError("Failed to send {}".format(ascii(data.decode())))
 
         self._logger.debug("Wrote {}".format(ascii(data.decode())))
-
-        return True
 
     def _beginCommand(self, command):
         """Sends a command to the AT interface without expecting a response
@@ -248,16 +250,15 @@ class AtInterface(object):
         :param command:
             Command to send
 
-        :return True:
-            Command sent
-        :return False:
+        :raise CommError:
             Failed to send command
+
+        :return none:
         """
 
         # First try to have locked control over the interface by sending the
         # 'AT'
-        if not self._writeRaw("AT".encode()):
-            return False
+        self._writeRaw("AT".encode())
 
         # Handle any buffered URCs, which -- since we entered the 'AT' -- we
         # expect to not show up anymore until we're done with the command's full
@@ -272,13 +273,8 @@ class AtInterface(object):
         # Drop provided line endings and use our own
         command = command.rstrip(self.NewLine) + self.SendNewLine
 
-        self._logger.info("Sending  'AT{}".format(ascii(command)[1:-1]))
-
         # Write the command
-        if not self._writeRaw(command.encode()):
-            return False
-
-        return True
+        self._writeRaw(command.encode())
 
     def _waitForResponse(self, timeout = None):
         """Waits for a certain response
@@ -288,8 +284,9 @@ class AtInterface(object):
         :param timeout:
             How long to wait for the response
 
-        :return None:
+        :raise CommError:
             Timed out waiting for response
+
         :return Response:
             The response
         """
@@ -305,14 +302,9 @@ class AtInterface(object):
 
             # If this is a final result, return it
             if response != None:
-                self._logger.info("Received {}".format(ascii("{}".format(response))))
-
                 return response
 
-        self._logger.error("Timeout")
-
-        # We must not have gotten a full response
-        return None
+        raise AtInterface.CommError("Timeout waiting for response")
 
     def _filterCommand(self, command, response):
         """Filters out an echoed command from a response
@@ -355,27 +347,50 @@ class AtInterface(object):
         :param timeout:
             How long to wait for the response, if any
 
-        :return None:
-            Timed out waiting for response
+        :raise CommError:
+            Timed out sending command or waiting for response
+
         :return Response:
             The response
         """
 
         # Send the command
-        if not self._beginCommand(command = command):
-            return None
+        self._beginCommand(command = command)
 
         # Wait for a response
         response = self._waitForResponse(timeout = timeout)
-
-        # If that failed, just use that
-        if response == None:
-            return None
 
         # Filter out the command
         self._filterCommand(command = command, response = response)
 
         return response
+
+    def waitUrc(self, urc, timeout = None):
+        """Waits for an asynchronous output
+
+        The URC string can be a regular expression, but it must be contained on
+        a single line.
+
+        :param self:
+            Self
+        :param urc:
+            The URC to wait for
+        :param timeout:
+            How long to wait for the URC
+
+        :return None:
+            Timed out waiting for URC
+        :return String:
+            The URC, sans line endings
+        """
+
+        for line in self._getLines(timeout = timeout):
+            # If the URC matches, great, got it
+            if re.match(urc, line) != None:
+                return line
+
+        # Must not have gotten our URC
+        return None
 
     def startPrompt(self, *args, **kwargs):
         """Starts a prompt command
@@ -452,19 +467,17 @@ class AtInterface(object):
             :param command:
                 The command to send
 
-            :return True:
-                Command started
-            :return False:
-                Failed to start command
+            :raise CommError:
+
+            :return none:
             """
 
+            # Note the command we're sending so we can try to filter it out of
+            # our response later
             self._command = command
 
             # Send the command
-            if not self._interface._beginCommand(command = command):
-                return False
-
-            return True
+            self._interface._beginCommand(command = command)
 
         def writeData(self, data):
             """Writes command data
@@ -474,18 +487,13 @@ class AtInterface(object):
             :param data:
                 The data to write
 
-            :return True:
-                Data written
-            :return False:
+            :raise CommError:
                 Failed to write data
+
+            :return none:
             """
 
-            self._interface._logger.info("Sending  {}".format(ascii(data)))
-
-            if not self._interface._writeRaw(data):
-                return False
-
-            return True
+            self._interface._writeRaw(data)
 
         def finish(self, timeout = None):
             """Finishes the prompt
@@ -495,8 +503,9 @@ class AtInterface(object):
             :param timeout:
                 How long to wait for the response
 
-            :return None:
-                Failed to get response
+            :raise CommError:
+                Failed to write data or get response
+
             :return Response:
                 The response
             """
@@ -508,39 +517,8 @@ class AtInterface(object):
             # Wait for a response
             response = self._interface._waitForResponse(timeout = timeout)
 
-            # If that failed, just use that
-            if response == None:
-                return None
-
             # Filter out the command
             if self._command != None:
                 self._interface._filterCommand(command = self._command, response = response)
 
             return response
-
-    def waitUrc(self, urc, timeout = None):
-        """Waits for an asynchronous output
-
-        The URC string can be a regular expression, but it must be contained on
-        a single line.
-
-        :param self:
-            Self
-        :param urc:
-            The URC to wait for
-        :param timeout:
-            How long to wait for the URC
-
-        :return None:
-            Timed out waiting for URC
-        :return String:
-            The URC, sans line endings
-        """
-
-        for line in self._getLines(timeout = timeout):
-            # If the URC matches, great, got it
-            if re.match(urc, line) != None:
-                return line
-
-        # Must not have gotten our URC
-        return None
