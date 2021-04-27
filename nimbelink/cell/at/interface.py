@@ -369,35 +369,73 @@ class AtInterface(object):
 
         return response
 
-    def waitUrc(self, urc, timeout = None):
+    def getUrc(self, pattern = None, timeout = None):
         """Waits for an asynchronous output
 
-        The URC string can be a regular expression, but it must be contained on
-        a single line.
+        The pattern string can be a regular expression used to filter out
+        irrelevant URCs. It must be contained on a single line, as URCs are only
+        single lines of text.
 
-        URCs are, by nature, single-line text strings, and thus will have their
-        line endings stripped prior to being returned.
+        URCs will have their line endings stripped prior to being returned.
 
         :param self:
             Self
-        :param urc:
-            The URC to wait for
+        :param pattern:
+            A pattern for filtering URCs
         :param timeout:
-            How long to wait for the URC
+            How long to wait for a new URC
 
-        :return None:
+        :raise CommError:
             Timed out waiting for URC
+
         :return String:
             The URC, sans line endings
         """
 
+        # Get another URC
         for line in self._getLines(timeout = timeout):
-            # If the URC matches, great, got it
-            if re.match(urc, line) != None:
-                return line.rstrip()
+            # If a pattern was specified but the URC doesn't match, ignore this
+            if (pattern != None) and (re.match(pattern, line) == None):
+                continue
 
-        # Must not have gotten our URC
-        return None
+            # Got a URC that's wanted
+            return line.rstrip()
+
+        # We didn't get the URC in time
+        raise AtInterface.CommError("Failed to receive URC matching '{}'".format(pattern))
+
+    def getUrcs(self, pattern = None, timeout = None):
+        """Waits for multiple asynchronous output
+
+        If a timeout is specified, it will be used for each individual URC as if
+        that were the first URC. That is, if a URC is returned and this function
+        is re-entered from the yield, the timeout will be measured relative to
+        when the function is entered again, *not* from when it was first
+        entered.
+
+        :param self:
+            Self
+        :param pattern:
+            A pattern for filtering URCs
+        :param timeout:
+            How long to wait for a new URC
+
+        :yield String:
+            The URC, sans line endings
+
+        :return none:
+        """
+
+        while True:
+            # Get another URC
+            try:
+                urc = self.getUrc(pattern = pattern, timeout = timeout)
+
+                yield urc
+
+            # If that failed, we're done
+            except AtInterface.CommError:
+                break
 
     def startPrompt(self, *args, **kwargs):
         """Starts a prompt command
