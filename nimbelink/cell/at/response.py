@@ -53,6 +53,26 @@ class Response(object):
 
         self._newLine = newLine
 
+    @property
+    def lines(self):
+        """Gets the individual lines from the output
+
+        A response cannot necessarily know ahead of time if its output contents
+        are individual string lines or binary data that might contain line
+        endings. A user of a response is responsible for knowing the context of
+        the response, and thus can decide to interpret the output as individual
+        lines using this property, which will return the output contents as an
+        array of lines with their line endings stripped.
+
+        :param self:
+            Self
+
+        :return Array of Strings:
+            The output contents as lines
+        """
+
+        return self.output.split(self._newLine)
+
     def __bool__(self):
         """Gets a boolean representation of the response
 
