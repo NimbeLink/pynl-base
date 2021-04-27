@@ -217,13 +217,17 @@ class AtInterface(object):
             if self._buffer.rfind(b'\n') < 0:
                 continue
 
-            self._logger.debug("Read  {}".format(ascii(self._buffer.decode())))
-
-            # Got another line
-            yield self._buffer.decode()
+            # We need to clear our buffer before yielding, as we can't guarantee
+            # the caller will re-enter the function again
+            buffer = self._buffer
 
             # We consumed a whole line, so start over
-            self._buffer.clear()
+            self._buffer = bytearray()
+
+            self._logger.debug("Read  {}".format(ascii(buffer.decode())))
+
+            # Got another line
+            yield buffer.decode()
 
     def _writeRaw(self, data):
         """Writes raw data
