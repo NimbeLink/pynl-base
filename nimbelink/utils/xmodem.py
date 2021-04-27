@@ -181,13 +181,21 @@ class Xmodem:
         for i in range(5):
             start = self._device.read()
 
-            # If we got the initial NAK, great, move on
-            if (len(start) > 0) and (start[0] == Xmodem.Packet.Nak):
-                return True
+            if len(start) > 0:
+                self._logger.debug("Received {}".format(ascii(start.decode())))
 
-            time.sleep(1)
+                # If we got the initial NAK, great, move on
+                if start[0] == Xmodem.Packet.Nak:
+                    return True
 
-        self._logger.error("Failed to get starting NAK ({})".format(start.decode()))
+                # We must have gotten some other garbage, so try clearing the
+                # serial port and go back around the horn for another try
+                self._clear()
+
+            if i < 4:
+                time.sleep(1)
+
+        self._logger.error("Failed to get starting NAK")
 
         return False
 
@@ -211,7 +219,7 @@ class Xmodem:
             packetId = self.packetId
         )
 
-        self._logger.debug(packet.hex())
+        self._logger.debug("Sending {}".format(ascii(packet)))
 
         # If we aren't using flow control, chunk the data
         if not self._device.rtscts:
@@ -235,7 +243,7 @@ class Xmodem:
 
         # If that failed, that's a paddlin'
         if writeLength != len(packet):
-            self._logger.error("Failed to send all bytes ({})".format(writeLength))
+            self._logger.error("Failed to send all bytes ({}/{})".format(writeLength, len(packet)))
             return False
 
         # Wait for a response
@@ -245,6 +253,8 @@ class Xmodem:
         if (response == None) or (len(response) < 1):
             self._logger.error("Failed to get response")
             return False
+
+        self._logger.debug("Received {}".format(ascii(response.decode())))
 
         # If it wasn't acknowledged, that's a paddlin'
         if response[0] != Xmodem.Packet.Ack:
