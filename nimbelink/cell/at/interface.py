@@ -375,6 +375,9 @@ class AtInterface(object):
         The URC string can be a regular expression, but it must be contained on
         a single line.
 
+        URCs are, by nature, single-line text strings, and thus will have their
+        line endings stripped prior to being returned.
+
         :param self:
             Self
         :param urc:
@@ -391,7 +394,7 @@ class AtInterface(object):
         for line in self._getLines(timeout = timeout):
             # If the URC matches, great, got it
             if re.match(urc, line) != None:
-                return line
+                return line.rstrip()
 
         # Must not have gotten our URC
         return None
