@@ -12,6 +12,7 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
+from nimbelink.cell.at.interface import AtInterface
 from nimbelink.cell.modem.skywire import Skywire
 
 from nimbelink.cell.modem.nano.gpio import Gpio
@@ -83,6 +84,31 @@ class SkywireNano(Skywire):
         """
 
         return self._socket
+
+    def waitForBoot(self, timeout = None):
+        """Waits for the Skywire Nano to boot
+
+        :param self:
+            Self
+        :param timeout:
+            How long to wait
+
+        :raise Skywire.AtError:
+            Failed to detect device's boot
+
+        :return none:
+        """
+
+        # The boot loader generally doesn't take long, so give it a reasonable
+        # amount of time
+        if timeout == None:
+            timeout = 5
+
+        try:
+            self.at.getUrc("READY", timeout = timeout)
+
+        except AtInterface.CommError:
+            raise Skywire.AtError(None, "Failed to detect boot")
 
     @property
     def versions(self):
