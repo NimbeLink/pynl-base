@@ -274,17 +274,19 @@ class AtInterface(object):
         if command[:2].upper() == "AT":
             command = command[2:]
 
-        # Drop provided line endings and use our own
-        command = command.rstrip(self.NewLine) + self.SendNewLine
+        # Add our sending line ending(s)
+        command = command + self.SendNewLine
 
         # Write the command
         self._writeRaw(command.encode())
 
-    def _waitForResponse(self, timeout = None):
+    def _waitForResponse(self, command, timeout = None):
         """Waits for a certain response
 
         :param self:
             Self
+        :param command:
+            The command to wait for a response to
         :param timeout:
             How long to wait for the response
 
@@ -302,44 +304,17 @@ class AtInterface(object):
             data += line
 
             # Try to get a response from that
-            response = Response.makeFromString(string = data, newLine = self.NewLine)
+            response = Response.makeFromString(
+                string = data,
+                command = command,
+                newLine = self.NewLine
+            )
 
             # If this is a final result, return it
             if response != None:
                 return response
 
         raise AtInterface.CommError("Timeout waiting for response")
-
-    def _filterCommand(self, command, response):
-        """Filters out an echoed command from a response
-
-        :param self:
-            Self
-        :param command:
-            The command
-        :param response:
-            The response
-
-        :return none:
-        """
-
-        # Try to filter out the command itself, if present
-        commandStart = response.output.find(command)
-
-        # If the command wasn't echoed back, nothing to do
-        if commandStart == -1:
-            return
-
-        # Skip over the command and the line endings automatically appended
-        # after it
-        outputStart = commandStart + len(command) + 2
-
-        # If there's also additional line endings due to us manually appending
-        # the carriage return, filter that too
-        if not command.endswith(self.SendNewLine):
-            outputStart += 1
-
-        response.output = response.output[outputStart:]
 
     def sendCommand(self, command, timeout = None):
         """Sends a command to the AT interface
@@ -358,16 +333,14 @@ class AtInterface(object):
             The response
         """
 
+        # Make sure the command is stripped of any provided line endings
+        command = command.rstrip()
+
         # Send the command
         self._beginCommand(command = command)
 
         # Wait for a response
-        response = self._waitForResponse(timeout = timeout)
-
-        # Filter out the command
-        self._filterCommand(command = command, response = response)
-
-        return response
+        return self._waitForResponse(command = command, timeout = timeout)
 
     def getUrc(self, pattern = None, timeout = None):
         """Waits for an asynchronous output
@@ -517,6 +490,9 @@ class AtInterface(object):
             :return none:
             """
 
+            # Make sure the command is stripped of any provided line endings
+            command = command.rstrip()
+
             # Note the command we're sending so we can try to filter it out of
             # our response later
             self._command = command
@@ -560,10 +536,4 @@ class AtInterface(object):
                 self._interface._writeRaw("\x1A".encode())
 
             # Wait for a response
-            response = self._interface._waitForResponse(timeout = timeout)
-
-            # Filter out the command
-            if self._command != None:
-                self._interface._filterCommand(command = self._command, response = response)
-
-            return response
+            return self._interface._waitForResponse(command = self._command, timeout = timeout)
