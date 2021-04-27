@@ -75,7 +75,9 @@ class Sim:
         if not response:
             raise Skywire.AtError(response)
 
-        if len(response.output) < 1:
+        lines = response.lines
+
+        if len(lines) < 1:
             raise Skywire.AtError(response, "ICCID not in response")
 
-        return response.output
+        return lines[0]

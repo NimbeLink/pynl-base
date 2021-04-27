@@ -240,12 +240,14 @@ class Gpio:
         if not response:
             raise Skywire.AtError(response)
 
+        lines = response.lines
+
         # If the response doesn't have an output, that's a paddlin'
-        if len(response.output) < 1:
+        if len(lines) < 1:
             raise Skywire.AtError(response, "GPIO states not in response")
 
         # The response is in the form of '#GPIO: <value(s)>'
-        fields = response.output.split(":")
+        fields = lines[0].split(":")
 
         # If that's not the case, that's a paddlin'
         if len(fields) != 2:

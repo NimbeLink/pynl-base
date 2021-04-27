@@ -129,7 +129,7 @@ class Socket(object):
             existingSocketIds = []
 
             # Make a list of the existing sockets
-            for existingSocket in response.output.split(self.nano.at.NewLine):
+            for existingSocket in response.lines:
                 fields = existingSocket.split(":")
 
                 if len(fields) < 2:
@@ -176,8 +176,13 @@ class Socket(object):
             if not response:
                 raise OSError("Failed to create new socket on modem")
 
+            lines = response.lines
+
             # If we didn't get our socket ID response, that's a paddlin'
-            fields = response.output.split(":")
+            if len(lines) < 1:
+                raise Skywire.AtError(response, "Invalid response")
+
+            fields = lines[0].split(":")
 
             if len(fields) != 2:
                 raise Skywire.AtError(response, "Invalid response")
@@ -240,8 +245,13 @@ class Socket(object):
             if not response:
                 raise OSError("Failed to connect socket")
 
+            lines = response.lines
+
             # If there isn't response output, that's a paddlin'
-            fields = response.output.split(":")
+            if len(lines) < 1:
+                raise Skywire.AtError(response, "Invalid response")
+
+            fields = lines[0].split(":")
 
             if len(fields) != 2:
                 raise Skywire.AtError(response, "Invalid response")
@@ -288,7 +298,7 @@ class Socket(object):
                 return 0
 
             # The data might have been echoed, so just use the last line
-            fields = response.output.split(self.nano.at.NewLine)[-1].split(":")
+            fields = response.lines[-1].split(":")
 
             if len(fields) != 2:
                 return 0
