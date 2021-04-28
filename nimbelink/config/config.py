@@ -223,10 +223,13 @@ class Config():
         :param option:
             The option to add to this level of configuration
 
-        :return none:
+        :return Option:
+            The added option
         """
 
         self._options.append(option)
+
+        return self._options[-1]
 
     def addSubConfig(self, config: "Config"):
         """Add a sub-configuration for things nested inside of this
@@ -237,10 +240,13 @@ class Config():
         :param config:
             The Config to add to the list of sub-configs
 
-        :return none:
+        :return Config:
+            The added config
         """
 
         self._subConfigs.append(config)
+
+        return self._subConfigs[-1]
 
     def __getitem__(self, name: str):
         """Find an option in this level or levels above and return its current
