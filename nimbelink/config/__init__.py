@@ -14,10 +14,8 @@
 
 from nimbelink.config.config import Config
 from nimbelink.config.config import Option
-from nimbelink.config.manager import ConfigManager
 
 __all__ = [
     "Config",
-    "Option",
-    "ConfigManager"
+    "Option"
 ]

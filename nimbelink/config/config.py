@@ -1,7 +1,7 @@
 ###
  # \file
  #
- # \brief A Skywire Nano target
+ # \brief Configuration with file-based storage
  #
  #  This module defines the Option and Config class. These classes work together
  #  to produce a structure similar to a Unix directory tree containing Configs.
@@ -14,6 +14,18 @@
  # subject to third party license terms as specified in this software, and such
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
+
+import yaml
+
+try:
+    # Try to use the libyaml bindings
+    from yaml import CLoader as Loader
+    from yaml import CDumper as Dumper
+
+except ImportError:
+    # Fall back to pure python yaml library
+    from yaml import Loader
+    from yaml import Dumper
 
 class Option():
     """This class represents a configuration option
@@ -319,33 +331,6 @@ class Config():
         # Return the formatted string
         return "{}:{}\n{}".format(self.name, optionString, subConfigString)
 
-    def load(self, data: dict):
-        """Loads our values
-
-        :param self:
-            Self
-        :param data:
-            The data to load
-
-        :return none
-        """
-
-        for key in data:
-            # Load any options
-            for option in self._options:
-                if option.name == key:
-                    option.value = data[key]
-                    break
-            else:
-                # Load any sub configs
-                for subConfig in self._subConfigs:
-                    if subConfig.name == key:
-                        subConfig.load(data[key])
-                        break
-                else:
-                    raise Exception("Option \"{}\" not found in test config" + \
-                         "(did you run generate after enabling?)".format(filename))
-
     def __iter__(self):
         """Iterates over configuration options
 
@@ -359,9 +344,112 @@ class Config():
         """
 
         # Yield the options
-        for key in self._options:
-            yield (key.name, key.value)
+        for option in self._options:
+            yield option
 
         # Yield the sub configs
         for subConfig in self._subConfigs:
-            yield (subConfig.name, dict(subConfig))
+            yield subConfig
+
+    @staticmethod
+    def _getDictEntries(config: "Config"):
+        """Gets a dictionary entry from a config
+
+        :param config:
+            The configuration whose entry to get
+
+        :return Dictionary:
+            The config's entries
+        """
+
+        data = {}
+
+        for option in config.options:
+            data[option.name] = option.value
+
+        for subConfig in config.subConfigs:
+            data[subConfig.name] = Config._getDictEntries(config = subConfig)
+
+        return data
+
+    @staticmethod
+    def _makeFromDict(name: str, data: dict):
+        """Makes a configuration from a dictionary
+
+        :param name:
+            The name of the configuration
+        :param data:
+            The dictionary data to parse
+
+        :return Config:
+            The config
+        """
+
+        config = Config(name = name)
+
+        for key in data:
+            # If this is a new configuration, add one for it and iterate over
+            # its options and sub-configs
+            if isinstance(data[key], dict):
+                config.add(Config._makeFromDict(name = key, data = data[key]))
+
+            # Else, this is an option, so add one for it
+            else:
+                config.add(Option(name = key, valueType = type(data[key]), value = data[key]))
+
+        return config
+
+    @staticmethod
+    def saveToFile(config: "Config", filename: str = "config.yaml"):
+        """Saves configuration values to a file
+
+        :param config:
+            The configuration to save
+        :param filename:
+            The file to save the configuration to
+
+        :return none:
+        """
+
+        # Write the config to disk
+        with open(filename, "w") as configFile:
+            data = {
+                config.name: Config._getDictEntries(config = config)
+            }
+
+            yaml.dump(data, configFile, Dumper = Dumper)
+
+    @staticmethod
+    def loadFromFile(filename: str = "config.yaml"):
+        """Loads configuration values from a file
+
+        :param filename:
+            The file to load the configuration from
+
+        :raise OSError:
+            Failed to load configuration from file
+
+        :return Config:
+            The loaded configuration
+        """
+
+        # Try to open the previous config file
+        try:
+            with open(filename, "r") as configFile:
+                # Read in existing configuration
+                data = yaml.load(configFile, Loader = Loader)
+
+        # If the file doesn't exist, use an empty configuration
+        except FileNotFoundError:
+            return Config()
+
+        # If there wasn't any data, use an empty configuration
+        if data == None:
+            return Config()
+
+        # If the data doesn't start with our famous 'root' entry, use an empty
+        # configuration
+        if "root" not in data:
+            return Config()
+
+        return Config._makeFromDict(name = "root", data = data["root"])
