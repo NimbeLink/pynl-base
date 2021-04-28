@@ -38,20 +38,33 @@ class Option():
         print(option.value)
     """
 
-    def __init__(self, name: str, value = None):
+    def __init__(self, name: str, valueType = None, value = None):
         """Creates a new configuration option
 
         :param self:
             Self
         :param name:
             The name of this option
+            :param valueType:
+                The type of value this contains
         :param value:
             The value of this option
 
         :return none:
         """
 
+        # If the value type wasn't specified
+        if valueType == None:
+            # If the value was specified, fill in the type with it
+            if value != None:
+                valueType = type(value)
+
+            # Else, default to something easy
+            else:
+                valueType = object
+
         self._name = name
+        self._valueType = valueType
         self._value = value
 
     @property
@@ -93,6 +106,9 @@ class Option():
 
         :return none:
         """
+
+        if not isinstance(newValue, self._valueType):
+            raise TypeError("Invalid type {} for option '{}' of type {}".format(type(newValue), self._name, self._valueType))
 
         self._value = newValue
 
