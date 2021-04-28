@@ -12,17 +12,15 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
-class Network:
+class Mode:
+    """Network modes
+    """
 
-    class Mode:
-        """Network modes
-        """
+    Off         = 0
+    """Networking is off"""
 
-        Off         = 0
-        """Networking is off"""
+    On          = 1
+    """Networking is on"""
 
-        On          = 1
-        """Networking is on"""
-
-        Limited     = 4
-        """Networking functionality is limited"""
+    Limited     = 4
+    """Networking functionality is limited"""

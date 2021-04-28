@@ -12,15 +12,16 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
-from nimbelink.cell.at.interface import AtInterface
-from nimbelink.cell.modem.skywire import Skywire
+import nimbelink.cell.at as at
+import nimbelink.cell.modem as modem
+import nimbelink.cell.modem.skywire as skywire
 
 from nimbelink.cell.modem.nano.app import App
 from nimbelink.cell.modem.nano.gpio import Gpio
 from nimbelink.cell.modem.nano.sim import Sim
 from nimbelink.cell.modem.nano.socket import Socket
 
-class SkywireNano(Skywire):
+class SkywireNano(skywire.Skywire):
     """A Skywire modem
     """
 
@@ -108,7 +109,7 @@ class SkywireNano(Skywire):
         :param timeout:
             How long to wait
 
-        :raise Skywire.AtError:
+        :raise AtError:
             Failed to detect device's boot
 
         :return none:
@@ -122,5 +123,5 @@ class SkywireNano(Skywire):
         try:
             self.at.getUrc("READY", timeout = timeout)
 
-        except AtInterface.CommError:
-            raise Skywire.AtError(None, "Failed to detect boot")
+        except at.Interface.CommError:
+            raise modem.AtError(None, "Failed to detect boot")

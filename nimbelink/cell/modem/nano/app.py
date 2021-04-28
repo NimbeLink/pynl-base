@@ -15,10 +15,11 @@
 import time
 import urllib.parse
 
-from nimbelink.cell.modem.app import App as BaseApp
+import nimbelink.cell.modem as modem
+import nimbelink.cell.modem.skywire as skywire
+import nimbelink.utils as utils
+
 from nimbelink.cell.modem.nano.urcs import Urcs
-from nimbelink.cell.modem.skywire import Skywire
-from nimbelink.utils.xmodem import Xmodem
 
 class App:
     """A Skywire Nano modem's application
@@ -44,7 +45,7 @@ class App:
         :param self:
             Self
 
-        :raise Skywire.AtError:
+        :raise AtError:
             Failed to get versions
 
         :return Array of tuples:
@@ -56,7 +57,7 @@ class App:
 
         # If that failed, that's a paddlin'
         if not response:
-            raise Skywire.AtError(response)
+            raise modem.AtError(response)
 
         versions = []
 
@@ -67,31 +68,31 @@ class App:
 
             # If that failed, that's a paddlin'
             if len(fields) != 3:
-                raise Skywire.AtError(response, "Invalid app version response")
+                raise modem.AtError(response, "Invalid app version response")
 
             # Make sure we remove any whitespace
-            versions.append(BaseApp.Version(name = fields[1].strip(), value = fields[2].strip()))
+            versions.append(modem.App.Version(name = fields[1].strip(), value = fields[2].strip()))
 
         # If there aren't two versions, that's a paddlin'
         if len(versions) != 2:
-            raise Skywire.AtError(response, "Failed to get all app versions")
+            raise modem.AtError(response, "Failed to get all app versions")
 
         # Get the modem/co-processor version
         response = self._nano.at.sendCommand("AT+CGMR")
 
         # If that failed, that's a paddlin'
         if not response:
-            raise Skywire.AtError(response)
+            raise modem.AtError(response)
 
         lines = response.lines
 
         # If there isn't a single version, that's a paddlin'
         if len(lines[0]) < 1:
-            raise Skywire.AtError(response, "Invalid co-processor version response")
+            raise modem.AtError(response, "Invalid co-processor version response")
 
         # The modem version is just a single string, so add our own identifier
         # for it
-        versions.append(BaseApp.Version(name = "MFW", value = lines[0]))
+        versions.append(modem.App.Version(name = "MFW", value = lines[0]))
 
         return versions
 
@@ -111,7 +112,7 @@ class App:
             Cannot perform update without kernel logging serial port
         :raise OSError:
             Failed to send update data
-        :raise Skywire.AtError:
+        :raise AtError:
             Failed to start update
 
         :return none:
@@ -129,7 +130,7 @@ class App:
             # file anyway
             with open(file, "rb") as _file:
                 # Make an XMODEM protocol to use to send the data
-                xmodem = Xmodem(device = self._nano._kernelLogDevice)
+                xmodem = utils.Xmodem(device = self._nano._kernelLogDevice)
 
                 # Make our command
                 command = "AT#FWUPD=1"
@@ -143,7 +144,7 @@ class App:
 
                 # If that failed, that's a paddlin'
                 if not response:
-                    raise Skywire.AtError(response)
+                    raise modem.AtError(response)
 
                 # Try to give the logging a little time to come across before we
                 # start using the serial port
@@ -177,7 +178,7 @@ class App:
 
             # If that failed, that's a paddlin'
             if not response:
-                raise Skywire.AtError(response)
+                raise modem.AtError(response)
 
         # Else, that's a paddlin'
         else:
@@ -196,7 +197,7 @@ class App:
             # If this is an indication of DFU finishing, we don't expect it yet,
             # so that's a paddlin'
             if dfu.type == Urcs.Dfu.Type.Done:
-                raise Skywire.AtError(urc, "Premature DFU finish")
+                raise modem.AtError(urc, "Premature DFU finish")
 
             # Else, if this is an indication of DFU starting to apply
             elif dfu.type == Urcs.Dfu.Type.Applying:
@@ -242,8 +243,8 @@ class App:
 
             # Else, this is an unexpected DFU URC, so that's a paddlin'
             else:
-                raise Skywire.AtError(urc, "Unexpected DFU URC")
+                raise modem.AtError(urc, "Unexpected DFU URC")
 
         # If we failed to see any successful final URCs, that's a paddlin'
         if count < 1:
-            raise Skywire.AtError(None, "Failed to get final DFU URC")
+            raise modem.AtError(None, "Failed to get final DFU URC")

@@ -14,7 +14,7 @@
 
 import socket
 
-from nimbelink.cell.modem.skywire import Skywire
+import nimbelink.cell.modem as modem
 
 class Socket(object):
     """A Skywire Nano socket
@@ -109,7 +109,7 @@ class Socket(object):
             :param **kwargs:
                 Additional keyword arguments
 
-            :raise Skywire.AtError:
+            :raise AtError:
                 AT command failed
             :raise OSError:
                 Failed to create new socket on modem
@@ -124,7 +124,7 @@ class Socket(object):
 
             # If that failed, that's a paddlin'
             if not response:
-                raise Skywire.AtError(response)
+                raise modem.AtError(response)
 
             existingSocketIds = []
 
@@ -180,23 +180,23 @@ class Socket(object):
 
             # If we didn't get our socket ID response, that's a paddlin'
             if len(lines) < 1:
-                raise Skywire.AtError(response, "Invalid response")
+                raise modem.AtError(response, "Invalid response")
 
             fields = lines[0].split(":")
 
             if len(fields) != 2:
-                raise Skywire.AtError(response, "Invalid response")
+                raise modem.AtError(response, "Invalid response")
 
             fields = fields[1].strip().split(",")
 
             if len(fields) != 2:
-                raise Skywire.AtError(response, "Invalid response")
+                raise modem.AtError(response, "Invalid response")
 
             try:
                 newSocketId = int(fields[0])
 
             except TypeError:
-                raise Skywire.AtError(response, "Invalid response")
+                raise modem.AtError(response, "Invalid response")
 
             # Note our socket ID and socket type
             self.socketId = newSocketId
@@ -224,7 +224,7 @@ class Socket(object):
             :param address:
                 A tuple of the host string and port number
 
-            :raise Skywire.AtError:
+            :raise AtError:
                 Failed to send AT command to open socket
             :raise OSError:
                 Failed to connect socket
@@ -249,18 +249,18 @@ class Socket(object):
 
             # If there isn't response output, that's a paddlin'
             if len(lines) < 1:
-                raise Skywire.AtError(response, "Invalid response")
+                raise modem.AtError(response, "Invalid response")
 
             fields = lines[0].split(":")
 
             if len(fields) != 2:
-                raise Skywire.AtError(response, "Invalid response")
+                raise modem.AtError(response, "Invalid response")
 
             try:
                 connected = bool(int(fields[1].strip()))
 
             except ValueError:
-                raise Skywire.AtError(response, "Invalid response")
+                raise modem.AtError(response, "Invalid response")
 
             # If we didn't connect, that's a paddlin'
             if not connected:
