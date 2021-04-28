@@ -170,12 +170,38 @@ class Config():
 
         self.parentConfig = parentConfig
 
-        self.subConfigs = []
-        self.options = []
+        self._subConfigs = []
+        self._options = []
 
         # Add config to parent if given
         if self.parentConfig != None:
             self.parentConfig.addSubConfig(self)
+
+    @property
+    def subConfigs(self):
+        """Gets our sub-configurations
+
+        :param self:
+            Self
+
+        :return Array of Config:
+            Our configurations
+        """
+
+        return self._subConfigs
+
+    @property
+    def options(self):
+        """Gets our options
+
+        :param self:
+            Self
+
+        :return Array of Option:
+            Our options
+        """
+
+        return self._options
 
     def addOption(self, option: Option):
         """Add an option to this level of configuration
@@ -188,7 +214,7 @@ class Config():
         :return none:
         """
 
-        self.options.append(option)
+        self._options.append(option)
 
     def addSubConfig(self, config: "Config"):
         """Add a sub-configuration for things nested inside of this
@@ -202,7 +228,7 @@ class Config():
         :return none:
         """
 
-        self.subConfigs.append(config)
+        self._subConfigs.append(config)
 
     def __getitem__(self, name: str):
         """Find an option in this level or levels above and return its current
@@ -221,7 +247,7 @@ class Config():
         """
 
         # Search in this config first for the option
-        for option in self.options:
+        for option in self._options:
             if option.name == name:
                 return option.value
 
@@ -250,7 +276,7 @@ class Config():
         """
 
         # Search in this config first for the option
-        for option in self.options:
+        for option in self._options:
             if option.name == name:
                 option.value = newValue
                 return
@@ -275,14 +301,14 @@ class Config():
 
         optionString = ""
 
-        if self.options:
+        if self._options:
             optionString = optionString + "\n  "
 
         # Get the options for this config
-        optionString = optionString + "\n  ".join(map(str, self.options))
+        optionString = optionString + "\n  ".join(map(str, self._options))
 
         # Get lines from the subconfigs
-        subConfigLines = "\n".join(map(str, self.subConfigs)).splitlines()
+        subConfigLines = "\n".join(map(str, self._subConfigs)).splitlines()
 
         # Append two spaces to the start of every line
         for i in range(0, len(subConfigLines)):
@@ -306,13 +332,13 @@ class Config():
 
         for key in data:
             # Load any options
-            for option in self.options:
+            for option in self._options:
                 if option.name == key:
                     option.value = data[key]
                     break
             else:
                 # Load any sub configs
-                for subConfig in self.subConfigs:
+                for subConfig in self._subConfigs:
                     if subConfig.name == key:
                         subConfig.load(data[key])
                         break
@@ -333,9 +359,9 @@ class Config():
         """
 
         # Yield the options
-        for key in self.options:
+        for key in self._options:
             yield (key.name, key.value)
 
         # Yield the sub configs
-        for subConfig in self.subConfigs:
+        for subConfig in self._subConfigs:
             yield (subConfig.name, dict(subConfig))
