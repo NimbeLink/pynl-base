@@ -15,6 +15,7 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
+import typing
 import yaml
 
 try:
@@ -220,38 +221,41 @@ class Config():
 
         return self._options
 
-    def addOption(self, option: Option):
-        """Add an option to this level of configuration
+    def add(self, thing: typing.Union[Option, "Config"]):
+        """Add an option or sub-config to this level of configuration
 
         :param self:
             Self
-        :param option:
-            The option to add to this level of configuration
+        :param thing:
+            The option or sub-config to add to this level of configuration
+
+        :raise ValueError:
+            Thing cannot be added to config
 
         :return Option:
             The added option
         """
 
-        self._options.append(option)
+        try:
+            name = thing.name
 
-        return self._options[-1]
+            bad = self[name]
 
-    def addSubConfig(self, config: "Config"):
-        """Add a sub-configuration for things nested inside of this
-        configuration
+            raise ValueError("{} '{}' already exists".format(type(thing), thing.name))
 
-        :param self:
-            Self
-        :param config:
-            The Config to add to the list of sub-configs
+        except (KeyError, AttributeError) as ex:
+            pass
 
-        :return Config:
-            The added config
-        """
+        if isinstance(thing, Option):
+            self._options.append(thing)
 
-        self._subConfigs.append(config)
+        elif isinstance(thing, Config):
+            self._subConfigs.append(thing)
 
-        return self._subConfigs[-1]
+        else:
+            raise ValueError("Can't add {} to config".format(type(thing)))
+
+        return thing
 
     def __getitem__(self, name: str):
         """Find an option in this level or levels above and return its current
