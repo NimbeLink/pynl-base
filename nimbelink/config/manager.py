@@ -24,8 +24,7 @@ except ImportError:
     from yaml import Loader
     from yaml import Dumper
 
-from nimbelink.config.config import Config
-from nimbelink.config.config import Option
+import nimbelink.config as config
 
 class ConfigManager:
     """A configuration manager
@@ -40,7 +39,7 @@ class ConfigManager:
         :return None:
         """
 
-        self.root = Config("root")
+        self.root = config.Config("root")
 
     def generate(self, filename: str = "config.yaml"):
         """Generates a new configuration
