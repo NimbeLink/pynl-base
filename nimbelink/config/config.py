@@ -150,7 +150,7 @@ class Config():
     a list of Options, a list of sub-Configs, and a pointer to a parent Config.
     """
 
-    def __init__(self, name: str, parentConfig: "Config" = None):
+    def __init__(self, name: str = "root", parentConfig: "Config" = None):
         """Creates a new configuration
 
         :param self:
