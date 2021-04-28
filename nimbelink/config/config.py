@@ -165,35 +165,24 @@ class Config():
     tests
 
     This class has a similar idea as a Unix directory structure. Each config has
-    a list of Options, a list of sub-Configs, and a pointer to a parent Config.
+    a list of Options and a list of sub-Configs.
     """
 
-    def __init__(self, name: str = "root", parentConfig: "Config" = None):
+    def __init__(self, name: str = "root"):
         """Creates a new configuration
 
         :param self:
             Self
         :param name:
             The name of the Config level
-        :param parentConfig:
-            A reference to the parent configuration. This is used to add this
-            Config to the tree of configs but also when an Option is requested
-            that is not in this level of config, the parent configurations are
-            asked if they have that Option
 
         :return none:
         """
 
         self.name = name
 
-        self.parentConfig = parentConfig
-
         self._subConfigs = []
         self._options = []
-
-        # Add config to parent if given
-        if self.parentConfig != None:
-            self.parentConfig.addSubConfig(self)
 
     @property
     def subConfigs(self):
@@ -278,9 +267,10 @@ class Config():
             if option.name == name:
                 return option.value
 
-        # Ask the parent if they have the option
-        if self.parentConfig != None:
-            return self.parentConfig[name]
+        # Next try to see if this is a sub-configuration of ours
+        for subConfig in self._subConfigs:
+            if subConfig.name == name:
+                return subConfig
 
         # Option not found in config
         raise KeyError("Unable to find \"{}\" in Config".format(name))
@@ -307,11 +297,6 @@ class Config():
             if option.name == name:
                 option.value = newValue
                 return
-
-        # Ask the parent if they have the option
-        if self.parentConfig != None:
-            self.parentConfig[name] = newValue
-            return
 
         # Option not found in config
         raise KeyError("Unable to find \"{}\" in Config".format(name))
