@@ -152,7 +152,12 @@ class Option():
             Us as a string
         """
 
-        return "{}:{}".format(self._name, self._value)
+        string = "{}:".format(self._name)
+
+        if self._value != None:
+            string += " {}".format(self._value)
+
+        return string
 
 class Config():
     """This class creates a configuration container for different levels in the
@@ -317,25 +322,18 @@ class Config():
             Us as a string
         """
 
-        optionString = ""
+        string = "config {}:".format(self.name)
 
-        if self._options:
-            optionString = optionString + "\n  "
+        for option in self._options:
+            string += "\n    option {}".format(option)
 
-        # Get the options for this config
-        optionString = optionString + "\n  ".join(map(str, self._options))
+        for subConfig in self._subConfigs:
+            subConfigString = "{}".format(subConfig)
 
-        # Get lines from the subconfigs
-        subConfigLines = "\n".join(map(str, self._subConfigs)).splitlines()
+            for line in subConfigString.split("\n"):
+                string += "\n    {}".format(line)
 
-        # Append two spaces to the start of every line
-        for i in range(0, len(subConfigLines)):
-            subConfigLines[i] = "  {}".format(subConfigLines[i])
-
-        subConfigString = "\n".join(subConfigLines)
-
-        # Return the formatted string
-        return "{}:{}\n{}".format(self.name, optionString, subConfigString)
+        return string
 
     def __iter__(self):
         """Iterates over configuration options
