@@ -19,8 +19,8 @@ class Option():
     """This class represents a configuration option
 
     Usually an option's value is not set on Option creation and is set from the
-    Config class using the set_value() method. The value of the object can be
-    retrieved with the value() method.
+    Config class using the .value = <value> notation. The value of the object
+    can be retrieved with the value property.
 
     Example:
 
@@ -35,7 +35,7 @@ class Option():
         config.add_option(option)
 
         # Somewhere in program main run
-        print(option.value())
+        print(option.value)
     """
 
     def __init__(self, name: str, value = None):
@@ -80,20 +80,21 @@ class Option():
 
         return self._value
 
-    def setValue(self, value):
+    @value.setter
+    def value(self, newValue):
         """Set the value of an option
 
         This is usually used with in the Config class
 
         :param self:
             Self
-        :param value:
+        :param newValue:
             The value to set the option to
 
         :return none:
         """
 
-        self._value = value
+        self._value = newValue
 
     def __str__(self):
         """Get a string representation of the option
@@ -188,7 +189,7 @@ class Config():
         # Search in this config first for the option
         for option in self.options:
             if option.name == name:
-                return option.value()
+                return option.value
 
         # Ask the parent if they have the option
         if self.parentConfig != None:
@@ -217,7 +218,7 @@ class Config():
         # Search in this config first for the option
         for option in self.options:
             if option.name == name:
-                option.setValue(newValue)
+                option.value = newValue
                 return
 
         # Ask the parent if they have the option
@@ -273,7 +274,7 @@ class Config():
             # Load any options
             for option in self.options:
                 if option.name == key:
-                    option.setValue(data[key])
+                    option.value = data[key]
                     break
             else:
                 # Load any sub configs
@@ -299,7 +300,7 @@ class Config():
 
         # Yield the options
         for key in self.options:
-            yield (key.name, key.value())
+            yield (key.name, key.value)
 
         # Yield the sub configs
         for subConfig in self.subConfigs:
