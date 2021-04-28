@@ -18,6 +18,34 @@ class Skywire(object):
     """A Skywire modem
     """
 
+    class AtError(Exception):
+        """An error that occurs when an AT command fails with an error
+        """
+
+        def __init__(self, response, message = None):
+            """Creates a new AT error
+
+            :param self:
+                Self
+            :param response:
+                The AT command's response
+            :param message:
+                A message about the failure
+
+            :return none:
+            """
+
+            if message == None:
+                message = "AT command failed"
+
+            if response != None:
+                message += ": {}".format(response)
+
+            self._response = response
+            self._message = message
+
+            super(Skywire.AtError, self).__init__(self._message)
+
     def __init__(self, at):
         """Creates a new Skywire modem
 
@@ -51,7 +79,7 @@ class Skywire(object):
         :param self:
             Self
 
-        :raise IOError:
+        :raise Skywire.AtError:
             Failed to get network mode
 
         :return Network.Mode:
@@ -62,20 +90,25 @@ class Skywire(object):
 
         # If we failed to query the network mode, that's a paddlin'
         if not response:
-            raise IOError("Failed to query network mode")
+            raise Skywire.AtError(response, "Failed to query network mode")
 
-        fields = response.output.split(",")
+        lines = response.lines
+
+        if len(lines) < 1:
+            raise Skywire.AtError(response, "Invalid network mode response")
+
+        fields = lines[0].split(",")
 
         # If there isn't at least the prefix and the current mode, that's a
         # paddlin'
         if len(fields) < 2:
-            raise IOError("Invalid network mode response")
+            raise Skywire.AtError(response, "Invalid network mode response")
 
         try:
             return int(fields[1])
 
         except ValueError:
-            raise IOError("Invalid network mode")
+            raise Skywire.AtError(response, "Invalid network mode")
 
     @networkMode.setter
     def networkMode(self, networkMode):
@@ -86,7 +119,7 @@ class Skywire(object):
         :param networkMode:
             The network mode to set
 
-        :raise IOError:
+        :raise Skywire.AtError:
             Failed to set network mode
 
         :return none:
@@ -94,5 +127,7 @@ class Skywire(object):
 
         # Setting the network mode can take a bit of time, so give it 10 seconds
         # to finish
-        if not self.at.sendCommand("AT+CFUN={}".format(networkMode), timeout = 10):
-            raise IOError("Failed to set network mode")
+        response = self.at.sendCommand("AT+CFUN={}".format(networkMode), timeout = 10)
+
+        if not response:
+            raise Skywire.AtError(response, "Failed to set network mode")

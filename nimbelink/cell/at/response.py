@@ -21,18 +21,25 @@ class Response(object):
     DefaultNewLine = "\r\n"
     """The default line endings to use"""
 
-    def __init__(self, result, output = None, newLine = None):
+    def __init__(self, result, command = None, output = None, newLine = None):
         """Creates a response
 
         :param self:
             Self
         :param result:
             The result of the response
+        :param command:
+            The command that led to this response
         :param output:
             Generic output, sans result indicator
+        :param newLine:
+            The line endings used
 
         :return none:
         """
+
+        if command == None:
+            command = ""
 
         if output == None:
             output = ""
@@ -41,9 +48,30 @@ class Response(object):
             newLine = Response.DefaultNewLine
 
         self.result = result
+        self.command = command
         self.output = output
 
         self._newLine = newLine
+
+    @property
+    def lines(self):
+        """Gets the individual lines from the output
+
+        A response cannot necessarily know ahead of time if its output contents
+        are individual string lines or binary data that might contain line
+        endings. A user of a response is responsible for knowing the context of
+        the response, and thus can decide to interpret the output as individual
+        lines using this property, which will return the output contents as an
+        array of lines with their line endings stripped.
+
+        :param self:
+            Self
+
+        :return Array of Strings:
+            The output contents as lines
+        """
+
+        return self.output.split(self._newLine)
 
     def __bool__(self):
         """Gets a boolean representation of the response
@@ -74,6 +102,9 @@ class Response(object):
 
         string = ""
 
+        if len(self.command) > 0:
+            string += self.command + self._newLine
+
         if len(self.output) > 0:
             string += self.output + self._newLine
 
@@ -82,11 +113,37 @@ class Response(object):
         return string
 
     @staticmethod
-    def makeFromString(string, newLine = None):
+    def _filterCommand(command, output):
+        """Filters out an echoed command from a response's output
+
+        :param command:
+            The command
+        :param output:
+            The output that might contain the command
+
+        :return String:
+            The filtered output
+        """
+
+        # Try to filter out the command itself, if present
+        commandStart = output.find(command)
+
+        # If the command wasn't echoed back, nothing to do
+        if commandStart == -1:
+            return output
+
+        # Skip over the command and the line endings automatically appended
+        # after it
+        return output[len(command):].lstrip()
+
+    @staticmethod
+    def makeFromString(string, command = None, newLine = None):
         """Creates a new response from output
 
         :param string:
             The raw string output to parse
+        :param command:
+            The command this is a response to
         :param newLine:
             The newline style to use
 
@@ -114,6 +171,11 @@ class Response(object):
         output = string[:resultStart]
         result = string[resultStart + 2:]
 
+        # If we're provided a command for context, make sure the output is
+        # stripped of any echoed command characters
+        if command != None:
+            output = Response._filterCommand(command = command, output = output)
+
         # Make the result from the last line
         result = Result.makeFromString(string = result)
 
@@ -121,4 +183,8 @@ class Response(object):
         if result == None:
             return None
 
-        return Response(output = output, result = result)
+        return Response(
+            command = command,
+            output = output,
+            result = result
+        )

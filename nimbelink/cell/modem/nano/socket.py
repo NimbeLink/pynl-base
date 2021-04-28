@@ -14,6 +14,8 @@
 
 import socket
 
+from nimbelink.cell.modem.skywire import Skywire
+
 class Socket(object):
     """A Skywire Nano socket
     """
@@ -107,8 +109,12 @@ class Socket(object):
             :param **kwargs:
                 Additional keyword arguments
 
+            :raise Skywire.AtError:
+                AT command failed
             :raise OSError:
-                Failed to create new socket
+                Failed to create new socket on modem
+            :raise OSError:
+                Failed to find file descriptor
 
             :return none:
             """
@@ -118,12 +124,12 @@ class Socket(object):
 
             # If that failed, that's a paddlin'
             if not response:
-                raise OSError("Failed to query existing sockets")
+                raise Skywire.AtError(response)
 
             existingSocketIds = []
 
             # Make a list of the existing sockets
-            for existingSocket in response.output.split(self.nano.at.NewLine):
+            for existingSocket in response.lines:
                 fields = existingSocket.split(":")
 
                 if len(fields) < 2:
@@ -168,24 +174,29 @@ class Socket(object):
 
             # If that failed, that's a paddlin'
             if not response:
-                raise OSError("Failed to create socket: {}".format(response))
+                raise OSError("Failed to create new socket on modem")
+
+            lines = response.lines
 
             # If we didn't get our socket ID response, that's a paddlin'
-            fields = response.output.split(":")
+            if len(lines) < 1:
+                raise Skywire.AtError(response, "Invalid response")
+
+            fields = lines[0].split(":")
 
             if len(fields) != 2:
-                raise OSError("Got invalid response: {}".format(response))
+                raise Skywire.AtError(response, "Invalid response")
 
             fields = fields[1].strip().split(",")
 
             if len(fields) != 2:
-                raise OSError("Got invalid response: {}".format(response))
+                raise Skywire.AtError(response, "Invalid response")
 
             try:
                 newSocketId = int(fields[0])
 
             except TypeError:
-                raise OSError("Got invalid response: {}".format(response))
+                raise Skywire.AtError(response, "Invalid response")
 
             # Note our socket ID and socket type
             self.socketId = newSocketId
@@ -213,8 +224,10 @@ class Socket(object):
             :param address:
                 A tuple of the host string and port number
 
-            :raise IOError:
-                Failed to connect
+            :raise Skywire.AtError:
+                Failed to send AT command to open socket
+            :raise OSError:
+                Failed to connect socket
 
             :return none:
             """
@@ -230,23 +243,28 @@ class Socket(object):
 
             # If that failed, that's a paddlin'
             if not response:
-                raise IOError("Failed to connect to {}: {}".format(address, response))
+                raise OSError("Failed to connect socket")
+
+            lines = response.lines
 
             # If there isn't response output, that's a paddlin'
-            fields = response.output.split(":")
+            if len(lines) < 1:
+                raise Skywire.AtError(response, "Invalid response")
+
+            fields = lines[0].split(":")
 
             if len(fields) != 2:
-                raise IOError("Failed to connect to {}: {}".format(address, response))
+                raise Skywire.AtError(response, "Invalid response")
 
             try:
                 connected = bool(int(fields[1].strip()))
 
             except ValueError:
-                raise IOError("Failed to connect to {}: {}".format(address, response))
+                raise Skywire.AtError(response, "Invalid response")
 
             # If we didn't connect, that's a paddlin'
             if not connected:
-                raise IOError("Failed to connect to {}: {}".format(address, response))
+                raise OSError("Failed to connect socket")
 
         def send(self, bytes):
             """Sends data to the socket
@@ -264,19 +282,15 @@ class Socket(object):
             # prompt-based sender with a static length
             with self.nano.at.startPrompt(dynamic = False) as prompt:
                 # Start the prompt
-                started = prompt.startCommand("AT#XTCPSEND={},{}\r".format(
+                prompt.startCommand("AT#XTCPSEND={},{}\r".format(
                     self.socketId,
                     len(bytes)
                 ))
 
-                # If we failed to start the prompt, that's a paddlin'
-                if not started:
-                    return 0
+                # Write the data
+                prompt.writeData(data = bytes)
 
-                # If we fail to write the data, that's a paddlin'
-                if not prompt.writeData(data = bytes):
-                    return 0
-
+                # Finish our prompt
                 response = prompt.finish()
 
             # If we failed to get a response, that's a paddlin'
@@ -284,7 +298,7 @@ class Socket(object):
                 return 0
 
             # The data might have been echoed, so just use the last line
-            fields = response.output.split(self.nano.at.NewLine)[-1].split(":")
+            fields = response.lines[-1].split(":")
 
             if len(fields) != 2:
                 return 0
