@@ -18,34 +18,6 @@ class Skywire(object):
     """A Skywire modem
     """
 
-    class AtError(Exception):
-        """An error that occurs when an AT command fails with an error
-        """
-
-        def __init__(self, response, message = None):
-            """Creates a new AT error
-
-            :param self:
-                Self
-            :param response:
-                The AT command's response
-            :param message:
-                A message about the failure
-
-            :return none:
-            """
-
-            if message == None:
-                message = "AT command failed"
-
-            if response != None:
-                message += ": {}".format(response)
-
-            self._response = response
-            self._message = message
-
-            super(Skywire.AtError, self).__init__(self._message)
-
     def __init__(self, at):
         """Creates a new Skywire modem
 
