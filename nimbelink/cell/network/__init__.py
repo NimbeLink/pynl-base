@@ -1,7 +1,7 @@
 ###
  # \file
  #
- # \brief The NimbeLink Skywire Nano
+ # \brief The NimbeLink cellular network package
  #
  # (C) NimbeLink Corp. 2020
  #
@@ -12,8 +12,8 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
-from nimbelink.cell.modem.nano.modem import SkywireNano
+from nimbelink.cell.network.mode import Mode
 
 __all__ = [
-    "SkywireNano"
+    "Mode"
 ]

@@ -12,7 +12,7 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
-from nimbelink.cell.modem.skywire import Skywire
+import nimbelink.cell.modem as modem
 
 class Gpio:
     """Skywire Nano GPIO resources
@@ -148,7 +148,7 @@ class Gpio:
 
         :raise ValueError:
             GPIO and configuration lists do not match
-        :raise Skywire.AtError:
+        :raise AtError:
             Failed to configure GPIOs
 
         :return none:
@@ -166,7 +166,7 @@ class Gpio:
 
         # If that failed, that's a paddlin'
         if not response:
-            raise Skywire.AtError(response)
+            raise modem.AtError(response)
 
     def getConfigs(self, gpios):
         """Gets GPIO configurations
@@ -195,7 +195,7 @@ class Gpio:
 
         :raise ValueError:
             GPIO and state lists do not match
-        :raise Skywire.AtError:
+        :raise AtError:
             Failed to set GPIOs
 
         :return none:
@@ -213,7 +213,7 @@ class Gpio:
 
         # If that failed, that's a paddlin'
         if not response:
-            raise Skywire.AtError(response)
+            raise modem.AtError(response)
 
     def read(self, gpios):
         """Reads GPIO states
@@ -223,7 +223,7 @@ class Gpio:
         :param gpios:
             A list of the GPIOs to query
 
-        :raise Skywire.AtError:
+        :raise AtError:
             Failed to query GPIO states
 
         :return Array of Integers:
@@ -238,20 +238,20 @@ class Gpio:
 
         # If that failed, that's a paddlin'
         if not response:
-            raise Skywire.AtError(response)
+            raise modem.AtError(response)
 
         lines = response.lines
 
         # If the response doesn't have an output, that's a paddlin'
         if len(lines) < 1:
-            raise Skywire.AtError(response, "GPIO states not in response")
+            raise modem.AtError(response, "GPIO states not in response")
 
         # The response is in the form of '#GPIO: <value(s)>'
         fields = lines[0].split(":")
 
         # If that's not the case, that's a paddlin'
         if len(fields) != 2:
-            raise Skywire.AtError(response, "Invalid GPIO states")
+            raise modem.AtError(response, "Invalid GPIO states")
 
         # Parse the response and get the states
         return self._parseParameter(gpios, fields[1].strip())

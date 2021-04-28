@@ -12,7 +12,7 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
-from nimbelink.cell.modem.skywire import Skywire
+import nimbelink.cell.modem as modem
 
 class Urcs:
     """Skywire Nano URCs
@@ -61,7 +61,7 @@ class Urcs:
             :param string:
                 The string to parse
 
-            :raise Skywire.AtError:
+            :raise AtError:
                 Failed to parse DFU URC
 
             :return Urcs.Dfu:
@@ -73,11 +73,11 @@ class Urcs:
 
             # If that failed, that's a paddlin'
             if len(fields) != 2:
-                raise Skywire.AtError(string, "DFU URC missing prefix")
+                raise modem.AtError(string, "DFU URC missing prefix")
 
             # Make sure this is ours
             if fields[0].strip() != Urcs.Dfu.Prefix:
-                raise Skywire.AtError(string, "Invalid DFU URC prefix")
+                raise modem.AtError(string, "Invalid DFU URC prefix")
 
             # Try to split the contents into a type and a value
             fields = fields[1].strip().split(",")
@@ -87,7 +87,7 @@ class Urcs:
                 type = int(fields[0])
 
             except ValueError:
-                raise Skywire.AtError(string, "Invalid DFU URC type")
+                raise modem.AtError(string, "Invalid DFU URC type")
 
             # If there was a value, get it
             if len(fields) > 1:
@@ -95,7 +95,7 @@ class Urcs:
                     value = int(fields[1])
 
                 except ValueError:
-                    raise Skywire.AtError(string, "Invalid DFU URC value")
+                    raise modem.AtError(string, "Invalid DFU URC value")
 
             else:
                 value = None
@@ -104,6 +104,6 @@ class Urcs:
             if (((type == Urcs.Dfu.Type.Failure) or (type == Urcs.Dfu.Type.Progress)) and
                 (value == None)
             ):
-                raise Skywire.AtError(None, "DFU URC missing value")
+                raise modem.AtError(None, "DFU URC missing value")
 
             return Urcs.Dfu(type = type, value = value)

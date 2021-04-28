@@ -19,7 +19,7 @@ import time
 
 from nimbelink.cell.at.response import Response
 
-class AtInterface(object):
+class Interface(object):
     """Python class for sending and receiving commands from embedded cellular
     modems
     """
@@ -56,7 +56,7 @@ class AtInterface(object):
 
         # Try to make the serial port with our default timeout
         try:
-            self._device = serial.Serial(*args, **kwargs, timeout = AtInterface.DefaultTimeout)
+            self._device = serial.Serial(*args, **kwargs, timeout = Interface.DefaultTimeout)
 
         # If it appears the user specified their own timeout, just use that
         except SyntaxError:
@@ -188,7 +188,7 @@ class AtInterface(object):
         """
 
         if timeout == None:
-            timeout = AtInterface.DefaultTimeout
+            timeout = Interface.DefaultTimeout
 
         self.readTimeout = timeout = timeout
 
@@ -244,7 +244,7 @@ class AtInterface(object):
         """
 
         if self._device.write(data) != len(data):
-            raise AtInterface.CommError("Failed to send {}".format(ascii(data.decode())))
+            raise Interface.CommError("Failed to send {}".format(ascii(data.decode())))
 
         self._logger.debug("Wrote {}".format(ascii(data.decode())))
 
@@ -314,7 +314,7 @@ class AtInterface(object):
             if response != None:
                 return response
 
-        raise AtInterface.CommError("Timeout waiting for response")
+        raise Interface.CommError("Timeout waiting for response")
 
     def sendCommand(self, command, timeout = None):
         """Sends a command to the AT interface
@@ -375,7 +375,7 @@ class AtInterface(object):
             return line.rstrip()
 
         # We didn't get the URC in time
-        raise AtInterface.CommError("Failed to receive URC matching '{}'".format(pattern))
+        raise Interface.CommError("Failed to receive URC matching '{}'".format(pattern))
 
     def getUrcs(self, pattern = None, timeout = None):
         """Waits for multiple asynchronous output
@@ -407,7 +407,7 @@ class AtInterface(object):
                 yield urc
 
             # If that failed, we're done
-            except AtInterface.CommError:
+            except Interface.CommError:
                 break
 
     def startPrompt(self, *args, **kwargs):
@@ -424,7 +424,7 @@ class AtInterface(object):
             The prompt
         """
 
-        return AtInterface.Prompt(self, *args, **kwargs)
+        return Interface.Prompt(self, *args, **kwargs)
 
     class Prompt:
         """A prompt for sending dynamic data in an AT command

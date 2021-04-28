@@ -12,8 +12,8 @@
  # portions are excluded from the preceding copyright notice of NimbeLink Corp.
  ##
 
-from nimbelink.cell.at.cme import CmeError
-from nimbelink.cell.at.cms import CmsError
+from nimbelink.cell.at.cmeError import CmeError
+from nimbelink.cell.at.cmsError import CmsError
 
 class Result(object):
     """A result of an AT command

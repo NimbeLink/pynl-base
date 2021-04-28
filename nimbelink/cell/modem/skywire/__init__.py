@@ -1,7 +1,7 @@
 ###
  # \file
  #
- # \brief Imports the Skywire Nano to make package usage easier
+ # \brief A NimbeLink Skywire modem
  #
  # (C) NimbeLink Corp. 2020
  #
@@ -13,3 +13,7 @@
  ##
 
 from nimbelink.cell.modem.skywire.modem import Skywire
+
+__all__ = [
+    "Skywire"
+]
