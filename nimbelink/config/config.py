@@ -107,10 +107,15 @@ class Option():
         :return none:
         """
 
-        if not isinstance(newValue, self._valueType):
-            raise TypeError("Invalid type {} for option '{}' of type {}".format(type(newValue), self._name, self._valueType))
+        if isinstance(newValue, self._valueType):
+            self._value = newValue
+            return
 
-        self._value = newValue
+        try:
+            self._value = self._valueType(newValue)
+
+        except ValueError:
+            raise TypeError("Invalid type {} for option '{}' of type {}".format(type(newValue), self._name, self._valueType))
 
     def __str__(self):
         """Get a string representation of the option
