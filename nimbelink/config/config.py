@@ -262,17 +262,14 @@ class Config():
             The Option or Config named name
         """
 
-        # Search in this config first for the option
         for option in self._options:
             if option.name == name:
                 return option.value
 
-        # Next try to see if this is a sub-configuration of ours
         for subConfig in self._subConfigs:
             if subConfig.name == name:
                 return subConfig
 
-        # Option not found in config
         raise KeyError("Unable to find \"{}\" in Config".format(name))
 
     def __setitem__(self, name: str, newValue):
@@ -292,14 +289,38 @@ class Config():
         :return none:
         """
 
-        # Search in this config first for the option
         for option in self._options:
             if option.name == name:
                 option.value = newValue
                 return
 
-        # Option not found in config
         raise KeyError("Unable to find \"{}\" in Config".format(name))
+
+    def __contains__(self, item):
+        """Checks if the configuration contains an item
+
+        :param self:
+            Self
+        :param item:
+            The item to check for
+
+        :return True:
+            Configuration contains the item
+        :return False:
+            Configuration does not contain the item
+        """
+
+        for option in self._options:
+            # Allow an object or name match
+            if (item == option) or (item == option.name):
+                return True
+
+        for subConfig in self._subConfigs:
+            # Allow an object or name match
+            if (item == subConfig) or (item == subConfig.name):
+                return True
+
+        return False
 
     def __str__(self):
         """Convert the configuration to a string
