@@ -81,6 +81,19 @@ class Option():
         return self._name
 
     @property
+    def valueType(self):
+        """Get the value type of an option
+
+        :param self:
+            Self
+
+        :return object:
+            The value type of the option
+        """
+
+        return self._valueType
+
+    @property
     def value(self):
         """Get the value of an option
 
