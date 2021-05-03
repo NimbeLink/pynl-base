@@ -4,7 +4,7 @@ Configuration with file-based storage
 This module defines the Option and Config class. These classes work together to
 produce a structure similar to a Unix directory tree containing Configs.
 
-(C) NimbeLink Corp. 2020
+(C) NimbeLink Corp. 2021
 
 All rights reserved except as explicitly granted in the license agreement
 between NimbeLink Corp. and the designated licensee. No other use or disclosure
