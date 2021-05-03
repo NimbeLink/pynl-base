@@ -238,19 +238,18 @@ class Config():
         return thing
 
     def __getitem__(self, name: str):
-        """Find an option in this level or levels above and return its current
-        value
+        """Get an Option or Config
 
         :param self:
             Self
         :param name:
-            The option name to get the value for
+            The name of the Option or Config to get
 
         :raise KeyError:
-            Option not found in config
+            Option or Config not found
 
         :return object:
-            The Option or Config named name
+            The Option or Config
         """
 
         for option in self._options:
@@ -264,8 +263,7 @@ class Config():
         raise KeyError("Unable to find \"{}\" in Config".format(name))
 
     def __setitem__(self, name: str, newValue):
-        """Find an option in this level or levels above and set its current
-        value
+        """Set an Option
 
         :param self:
             Self
@@ -275,7 +273,7 @@ class Config():
             The value to set the Option to
 
         :raise KeyError:
-            Option not found in config
+            Option not found
 
         :return none:
         """
@@ -283,6 +281,32 @@ class Config():
         for option in self._options:
             if option.name == name:
                 option.value = newValue
+                return
+
+        raise KeyError("Unable to find \"{}\" in Config".format(name))
+
+    def __delitem__(self, name: str):
+        """Deletes an Option or Config
+
+        :param self:
+            Self
+        :param name:
+            The name of the Option or Config to delete
+
+        :raise KeyError:
+            Option or Config not found
+
+        :return none:
+        """
+
+        for i in range(len(self._options)):
+            if self._options[i].name == name:
+                del self._options[i]
+                return
+
+        for i in range(len(self._subConfigs)):
+            if self._subConfigs[i].name == name:
+                del self._subConfigs[i]
                 return
 
         raise KeyError("Unable to find \"{}\" in Config".format(name))
