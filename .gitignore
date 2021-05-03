@@ -5,9 +5,10 @@ __pycache__
 *.swp
 .vscode
 /.vs
-/SkywireUnittests/logs
-/reports
-*socket.txt
+
 # Virtual Environment Directories
 /ENV
 .venv
+
+# Package Directories
+*.egg-info
