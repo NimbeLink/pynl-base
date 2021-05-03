@@ -1,5 +1,5 @@
 """
-The NimbeLink package
+A command that can be run from the command line or using Python specifically
 
 (C) NimbeLink Corp. 2020
 
@@ -10,15 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-import nimbelink.cell as cell
-import nimbelink.command as command
-import nimbelink.config as config
-import nimbelink.ui as ui
-import nimbelink.utils as utils
+from nimbelink.command.command import Command
 
 __all__ = [
-    "cell",
-    "config",
-    "ui",
-    "utils"
+    "Command",
 ]
