@@ -6,6 +6,8 @@ __pycache__
 .vscode
 /.vs
 /SkywireUnittests/logs
-/ENV
 /reports
 *socket.txt
+# Virtual Environment Directories
+/ENV
+.venv
