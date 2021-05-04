@@ -407,7 +407,7 @@ class Config():
             yield subConfig
 
     @staticmethod
-    def _getDictEntries(config: "Config"):
+    def _getConfigDict(config: "Config"):
         """Gets a dictionary entry from a config
 
         :param config:
@@ -423,7 +423,42 @@ class Config():
             data[option.name] = option.value
 
         for subConfig in config.subConfigs:
-            data[subConfig.name] = Config._getDictEntries(config = subConfig)
+            data[subConfig.name] = Config._getConfigDict(config = subConfig)
+
+        return data
+
+    @staticmethod
+    def _getFileDict(filename: str):
+        """Gets a file's dictionary of data
+
+        :param filename:
+            The file to get a dictionary from
+
+        :raise OSError:
+            Failed to get dictionary from file
+
+        :return dict:
+            The dictionary of data
+        """
+
+        # Try to open the previous config file
+        try:
+            with open(filename, "r") as configFile:
+                # Read in existing configuration
+                data = yaml.load(configFile, Loader = Loader)
+
+        # If the file doesn't exist, use an empty configuration
+        except FileNotFoundError:
+            raise OSError("Failed to load file {}".format(filename))
+
+        # If there wasn't any data, use an empty configuration
+        if data == None:
+            raise OSError("No data found in file {}".format(filename))
+
+        # If the data doesn't start with our famous 'root' entry, use an empty
+        # configuration
+        if "root" not in data:
+            raise OSError("No 'root' configuration found in file {}".format(filename))
 
         return data
 
@@ -434,10 +469,10 @@ class Config():
         :param name:
             The name of the configuration
         :param data:
-            The dictionary data to parse
+            The configuration's data
 
         :return Config:
-            The config
+            The configuration
         """
 
         config = Config(name = name)
@@ -455,11 +490,44 @@ class Config():
         return config
 
     @staticmethod
-    def saveToFile(config: "Config", filename: str = "config.yaml"):
-        """Saves configuration values to a file
+    def _loadFromDict(config: "Config", data: dict):
+        """Loads a configuration from a dictionary
 
         :param config:
-            The configuration to save
+            The configuration to load
+        :param data:
+            The configuration's data
+
+        :raise OSError:
+            Failed to load configuration from dictionary
+
+        :return none:
+        """
+
+        for key in data:
+            # If this isn't found in our items, that's a paddlin'
+            if key not in config:
+                raise OSError("Item {} not found in config".format(key))
+
+            # If the item is a configuration but our item isn't; or vice versa,
+            # that's a paddlin'
+            if isinstance(data[key], dict):
+                if not isinstance(config[key], Config):
+                    raise OSError("Item {} is a Config but should be an Option".format(key))
+
+                Config._loadFromDict(config = config[key], data = data[key])
+
+            else:
+                if not isinstance(config[key], Option):
+                    raise OSError("Item {} is an Option but should be a Config".format(key))
+
+                config[key] = data[key]
+
+    def saveToFile(self, filename: str = "config.yaml"):
+        """Saves configuration values to a file
+
+        :param self:
+            Self
         :param filename:
             The file to save the configuration to
 
@@ -469,14 +537,32 @@ class Config():
         # Write the config to disk
         with open(filename, "w") as configFile:
             data = {
-                config.name: Config._getDictEntries(config = config)
+                self.name: Config._getConfigDict(config = self)
             }
 
             yaml.dump(data, configFile, Dumper = Dumper)
 
+    def loadFromFile(self, filename: str = "config.yaml"):
+        """Loads a configuration from a file
+
+        :param self:
+            Self
+        :param filename:
+            The file to load the configuration from
+
+        :raise OSError:
+            Failed to load configuration from file
+
+        :return none:
+        """
+
+        return self._loadFromDict(
+            data = Config._getFileDict(filename = filename)["root"]
+        )
+
     @staticmethod
-    def loadFromFile(filename: str = "config.yaml"):
-        """Loads configuration values from a file
+    def makeFromFile(filename: str = "config.yaml"):
+        """Makes a configuration from a file
 
         :param filename:
             The file to load the configuration from
@@ -488,23 +574,7 @@ class Config():
             The loaded configuration
         """
 
-        # Try to open the previous config file
-        try:
-            with open(filename, "r") as configFile:
-                # Read in existing configuration
-                data = yaml.load(configFile, Loader = Loader)
-
-        # If the file doesn't exist, use an empty configuration
-        except FileNotFoundError:
-            return Config()
-
-        # If there wasn't any data, use an empty configuration
-        if data == None:
-            return Config()
-
-        # If the data doesn't start with our famous 'root' entry, use an empty
-        # configuration
-        if "root" not in data:
-            return Config()
-
-        return Config._makeFromDict(name = "root", data = data["root"])
+        return Config._makeFromDict(
+            name = "root",
+            data = Config._getFileDict(filename = filename)["root"]
+        )
