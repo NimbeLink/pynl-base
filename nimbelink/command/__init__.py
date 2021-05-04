@@ -1,7 +1,7 @@
 """
-NimbeLink utilities
+A command that can be run from the command line or using Python specifically
 
-(C) NimbeLink Corp. 2021
+(C) NimbeLink Corp. 2020
 
 All rights reserved except as explicitly granted in the license agreement
 between NimbeLink Corp. and the designated licensee. No other use or disclosure
@@ -10,10 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from nimbelink.utils.wsl import Wsl
-from nimbelink.utils.xmodem import Xmodem
+from nimbelink.command.command import Command
 
 __all__ = [
-    "Wsl",
-    "Xmodem"
+    "Command",
 ]

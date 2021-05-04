@@ -11,6 +11,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import nimbelink.cell as cell
+import nimbelink.command as command
 import nimbelink.config as config
 import nimbelink.ui as ui
 import nimbelink.utils as utils
