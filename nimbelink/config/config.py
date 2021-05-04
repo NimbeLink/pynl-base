@@ -49,7 +49,13 @@ class Option():
         print(option.value)
     """
 
-    def __init__(self, name: str, type = None, value = None):
+    def __init__(
+        self,
+        name: str,
+        type: object = None,
+        value: object = None,
+        choices: typing.List[object] = None
+    ):
         """Creates a new configuration option
 
         :param self:
@@ -60,6 +66,8 @@ class Option():
             The type of value this contains
         :param value:
             The value of this option
+        :param choices:
+            The available values to choose from
 
         :return none:
         """
@@ -67,6 +75,7 @@ class Option():
         self._name = name
         self._type = type
         self._value = value
+        self._choices = choices
 
     @property
     def name(self):
@@ -98,6 +107,19 @@ class Option():
         return self._type
 
     @property
+    def choices(self):
+        """Gets the available values to choose from
+
+        :param self:
+            Self
+
+        :return List[object]:
+            The available choices
+        """
+
+        return self._choices
+
+    @property
     def value(self):
         """Get the value of an option
 
@@ -123,6 +145,10 @@ class Option():
 
         :return none:
         """
+
+        if self._choices != None:
+            if newValue not in self._choices:
+                raise TypeError("Invalid value {} for choices {}".format(newValue, self._choices))
 
         if isinstance(newValue, self._type):
             self._value = newValue
