@@ -62,6 +62,8 @@ class Interface(object):
 
         self._buffer = bytearray()
 
+        self.writeTimeout = 0
+
         # Clear out to begin with
         self._clear()
 
@@ -110,6 +112,36 @@ class Interface(object):
         # input/output, so only set it if necessary
         if self._device.timeout != timeout:
             self._device.timeout = timeout
+
+    @property
+    def writeTimeout(self):
+        """Gets our serial port's write timeout
+
+        :param self:
+            Self
+
+        :return Integer:
+            Our serial port's write timeout
+        """
+
+        return self._device.write_timeout
+
+    @writeTimeout.setter
+    def writeTimeout(self, timeout):
+        """Sets our serial port's write timeout
+
+        :param self:
+            Self
+        :param timeout:
+            The timeout to set
+
+        :return none:
+        """
+
+        # Setting the serial port's timeout can cause issues with buffering of
+        # input/output, so only set it if necessary
+        if self._device.write_timeout != timeout:
+            self._device.write_timeout = timeout
 
     @property
     def baudRate(self):
@@ -188,7 +220,7 @@ class Interface(object):
         if timeout == None:
             timeout = Interface.DefaultTimeout
 
-        self.readTimeout = timeout = timeout
+        self.readTimeout = timeout
 
         # Allow a zero-second timeout to still potentially read input
         startTime = None
