@@ -49,6 +49,33 @@ class Option():
         print(option.value)
     """
 
+    @staticmethod
+    def toBool(value):
+        """Converts a value to a boolean
+
+        :param value:
+            The value to convert
+
+        :raise TypeError:
+            Invalid boolean-like value
+
+        :return True:
+            True
+        :return False:
+            False
+        """
+
+        if isinstance(value, bool):
+            return value
+
+        if value.lower() in ["yes", "y", "true", "t", "1"]:
+            return True
+
+        if value.lower() in ["no", "n", "false", "f", "0"]:
+            return False
+
+        raise TypeError("Failed to convert '{}' to a boolean".format(value))
+
     def __init__(
         self,
         name: str,
