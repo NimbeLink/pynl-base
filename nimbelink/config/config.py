@@ -49,33 +49,23 @@ class Option():
         print(option.value)
     """
 
-    def __init__(self, name: str, valueType = None, value = None):
+    def __init__(self, name: str, type = None, value = None):
         """Creates a new configuration option
 
         :param self:
             Self
         :param name:
             The name of this option
-            :param valueType:
-                The type of value this contains
+        :param type:
+            The type of value this contains
         :param value:
             The value of this option
 
         :return none:
         """
 
-        # If the value type wasn't specified
-        if valueType == None:
-            # If the value was specified, fill in the type with it
-            if value != None:
-                valueType = type(value)
-
-            # Else, default to something easy
-            else:
-                valueType = object
-
         self._name = name
-        self._valueType = valueType
+        self._type = type
         self._value = value
 
     @property
@@ -92,7 +82,7 @@ class Option():
         return self._name
 
     @property
-    def valueType(self):
+    def type(self):
         """Get the value type of an option
 
         :param self:
@@ -102,7 +92,10 @@ class Option():
             The value type of the option
         """
 
-        return self._valueType
+        if self._value != None:
+            return type(self._value)
+
+        return self._type
 
     @property
     def value(self):
@@ -131,15 +124,15 @@ class Option():
         :return none:
         """
 
-        if isinstance(newValue, self._valueType):
+        if isinstance(newValue, self._type):
             self._value = newValue
             return
 
         try:
-            self._value = self._valueType(newValue)
+            self._value = self._type(newValue)
 
         except ValueError:
-            raise TypeError("Invalid type {} for option '{}' of type {}".format(type(newValue), self._name, self._valueType))
+            raise TypeError("Invalid type {} for option '{}' of type {}".format(type(newValue), self._name, self._type))
 
     def __str__(self):
         """Get a string representation of the option
@@ -407,7 +400,7 @@ class Config():
 
             # Else, this is an option, so add one for it
             else:
-                config.add(Option(name = key, valueType = type(data[key]), value = data[key]))
+                config.add(Option(name = key, type = type(data[key]), value = data[key]))
 
         return config
 
