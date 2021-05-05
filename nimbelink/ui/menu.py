@@ -17,7 +17,7 @@ class Menu:
     """A command-line user menu
     """
 
-    def __init__(self, prompt: str, items: typing.List[object]):
+    def __init__(self, prompt: str, items: typing.List[object], currentValue: object = None):
         """Creates a new menu
 
         :param self:
@@ -26,16 +26,15 @@ class Menu:
             The prompt text explaining the selection choice(s)
         :param items:
             The selection choices
+        :param currentValue:
+            The current value, if any
 
         :return none:
         """
 
-        # Make sure we can dress up the text as we like without duplicating
-        # things provided
-        prompt = prompt.rstrip().rstrip(":")
-
         self._prompt = prompt
         self._items = items
+        self._currentValue = currentValue
 
     def getSelection(self):
         """Gets a selection for our menu
@@ -49,33 +48,43 @@ class Menu:
             The selection from the item list
         """
 
-        sys.stdout.write("{}:\n".format(self._prompt))
+        while True:
+            sys.stdout.write("{}:\n".format(self._prompt))
 
-        for i in range(len(self._items)):
-            sys.stdout.write("{:4d}: {}\n".format(i + 1, self._items[i]))
+            for i in range(len(self._items)):
+                sys.stdout.write("{:4d}: {}".format(i + 1, self._items[i]))
 
-        sys.stdout.write("\n")
-        sys.stdout.write("Enter selection: ")
-        sys.stdout.flush()
+                if self._items[i] == self._currentValue:
+                    sys.stdout.write(" (current)")
 
-        try:
-            while True:
-                input = sys.stdin.readline().rstrip()
+                sys.stdout.write("\n")
 
-                try:
-                    selection = int(input)
+            sys.stdout.write("\n")
+            sys.stdout.write("Enter selection: ")
+            sys.stdout.flush()
 
-                except ValueError:
-                    sys.stdout.write("Please enter a valid number ({})".format(input))
-                    continue
+            input = sys.stdin.readline().rstrip()
 
-                if selection > len(self._items):
-                    sys.stdout.write("Invalid selection {}".format(selection))
-                    continue
+            sys.stdout.write("\n")
 
-                break
+            if len(input) < 1:
+                if self._currentValue != None:
+                    return self._currentValue
 
-        except KeyboardInterrupt:
-            return None
+                sys.stdout.write("Please enter a selection\n")
+                continue
+
+            try:
+                selection = int(input)
+
+            except ValueError:
+                sys.stdout.write("Please enter a valid number ({})\n".format(input))
+                continue
+
+            if selection > len(self._items):
+                sys.stdout.write("Invalid selection {}\n".format(selection))
+                continue
+
+            break
 
         return self._items[selection - 1]

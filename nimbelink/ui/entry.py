@@ -17,22 +17,21 @@ class Entry:
     """A command-line user entry
     """
 
-    def __init__(self, prompt: str):
+    def __init__(self, prompt: str, currentValue: object = None):
         """Creates a new entry
 
         :param self:
             Self
         :param prompt:
             The prompt text explaining the entry
+        :param currentValue:
+            The current value, if any
 
         :return none:
         """
 
-        # Make sure we can dress up the text as we like without duplicating
-        # things provided
-        prompt = prompt.rstrip().rstrip(":")
-
         self._prompt = prompt
+        self._currentValue = currentValue
 
     def getInput(self):
         """Gets input for our entry
@@ -46,13 +45,26 @@ class Entry:
             The free-form entry
         """
 
-        sys.stdout.write("{}: ".format(self._prompt))
-        sys.stdout.flush()
+        while True:
+            sys.stdout.write("{}".format(self._prompt))
 
-        try:
+            if self._currentValue != None:
+                sys.stdout.write(" (current {})".format(self._currentValue))
+
+            sys.stdout.write(": ")
+            sys.stdout.flush()
+
             input = sys.stdin.readline().rstrip()
 
-        except KeyboardInterrupt:
-            return None
+            sys.stdout.write("\n")
+
+            if len(input) < 1:
+                if self._currentValue != None:
+                    return self._currentValue
+
+                sys.stdout.write("Please enter a value\n")
+                continue
+
+            break
 
         return input
