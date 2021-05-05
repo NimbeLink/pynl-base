@@ -1,7 +1,7 @@
 """
 A command that can be run from the command line or using Python specifically
 
-(C) NimbeLink Corp. 2020
+(C) NimbeLink Corp. 2021
 
 All rights reserved except as explicitly granted in the license agreement
 between NimbeLink Corp. and the designated licensee. No other use or disclosure
