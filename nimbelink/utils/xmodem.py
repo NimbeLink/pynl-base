@@ -12,6 +12,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 import logging
 import time
+import serial
 
 class Xmodem:
     """An XMODEM interface
@@ -81,10 +82,12 @@ class Xmodem:
                 packetStart = cls.LargeStart
                 padLength = 1024 - len(packetData)
 
-            # If we should pad the packet, do so
+            # If we need to pad the packet, do so
+            # Original protocol uses 0x1a as the padding character but 0xff
+            # was done for west
+            padCharacter = 0xff
             if padLength > 0:
-                for i in range(padLength):
-                    packetData += bytearray([0xFF])
+                packetData += bytearray([padCharacter] * padLength)
 
             # Figure out the next packet's ID, making sure we always stay a byte
             inversePacketId = cls.getInversePacketId(packetId = packetId)
@@ -132,7 +135,7 @@ class Xmodem:
 
             return (packetId + 1) & 0xFF
 
-    def __init__(self, device):
+    def __init__(self, device: serial.Serial):
         """Creates a new XMODEM interface
 
         :param self:
@@ -143,9 +146,12 @@ class Xmodem:
         :return none:
         """
 
+        # Get a reference to the logger for this class
         self._logger = logging.getLogger(__name__)
-
+        # The serial device we are transfering a file over
         self._device = device
+        # The id of the current packet being sent
+        self.packetId = Xmodem.Packet.getFirstPacketId()
 
     def _clear(self):
         """Clears our device's input/output buffers
@@ -175,26 +181,26 @@ class Xmodem:
         # Initialize our packet ID
         self.packetId = Xmodem.Packet.getFirstPacketId()
 
-        # Try for a bit to get our initial NAK byte
-        for i in range(5):
-            start = self._device.read()
+        # Clear out any previous data in the serial buffers
+        self._clear()
 
-            if len(start) > 0:
-                self._logger.debug("Received {}".format(ascii(start.decode())))
-
-                # If we got the initial NAK, great, move on
+        # Try for 30 seconds to get the starting NAK, discarding single
+        # bytes until we timeout or get a NAK
+        beginTime = time.time()
+        while (time.time() - beginTime) < 30:
+            # Try reading a single byte from the serial device
+            start = self._device.read(1)
+            # Make sure we didn't timeout
+            if start:
+                # If we got a NAK return success
                 if start[0] == Xmodem.Packet.Nak:
                     return True
+                # Log the non-NAK byte
+                else:
+                    self._logger.debug(start)
 
-                # We must have gotten some other garbage, so try clearing the
-                # serial port and go back around the horn for another try
-                self._clear()
-
-            if i < 4:
-                time.sleep(1)
-
+        # Failed to get starting NAK
         self._logger.error("Failed to get starting NAK")
-
         return False
 
     def _sendData(self, packetData):
@@ -211,52 +217,67 @@ class Xmodem:
             Failed to send packet
         """
 
-        # Get the packet
-        packet = Xmodem.Packet.getPacket(
-            packetData = packetData,
-            packetId = self.packetId
-        )
+        response = bytes([Xmodem.Packet.Nak])
+        beginTime = time.time()
 
-        self._logger.debug("Sending {}".format(ascii(packet)))
+        # Try for 40 seconds to send the packet
+        while time.time() - beginTime < 40:
+            # Get the packet
+            packet = Xmodem.Packet.getPacket(
+                packetData = packetData,
+                packetId = self.packetId
+            )
 
-        # If we aren't using flow control, chunk the data
-        if not self._device.rtscts:
-            writeLength = 0
+            self._logger.debug("Sending %s", ascii(packet))
 
-            bytes = list(packet)
+            # If we aren't using flow control, chunk the data
+            if not self._device.rtscts:
+                writeLength = 0
 
-            while True:
-                if len(bytes) < 1:
-                    break
+                packetBytes = list(packet)
 
-                time.sleep(0.1)
+                while True:
+                    if len(packetBytes) < 1:
+                        break
 
-                writeLength += self._device.write(bytes[0:Xmodem.ChunkSize])
+                    time.sleep(0.1)
 
-                bytes = bytes[Xmodem.ChunkSize:]
+                    writeLength += \
+                            self._device.write(packetBytes[0:Xmodem.ChunkSize])
 
-        # Else, just spit everything out
-        else:
-            writeLength = self._device.write(packet)
+                    packetBytes = packetBytes[Xmodem.ChunkSize:]
 
-        # If that failed, that's a paddlin'
-        if writeLength != len(packet):
-            self._logger.error("Failed to send all bytes ({}/{})".format(writeLength, len(packet)))
-            return False
+            # Else, just spit everything out
+            else:
+                writeLength = self._device.write(packet)
 
-        # Wait for a response
-        response = self._device.read(1)
+            # If that failed, that's a paddlin'
+            if writeLength != len(packet):
+                self._logger.error("Failed to send all bytes (%d/%d)",
+                                                    writeLength, len(packet))
+                return False
 
-        # If that failed, that's a paddlin'
-        if (response == None) or (len(response) < 1):
-            self._logger.error("Failed to get response")
-            return False
+            # Wait for a response
+            response = self._device.read(1)
 
-        self._logger.debug("Received {}".format(ascii(response.decode())))
+            # If that failed, that's a paddlin'
+            if (response is None) or (len(response) < 1):
+                self._logger.error("Failed to get response")
+                return False
+
+            self._logger.debug("Received %s", ascii(response.decode()))
+
+            if response[0] == Xmodem.Packet.Ack:
+                # Modem ACKed packet
+                break
+            else:
+                # Try again in two seconds if the modem didn't ACK
+                self._logger.warning("Failed to get ACK, reattempting...")
+                time.sleep(2) 
 
         # If it wasn't acknowledged, that's a paddlin'
         if response[0] != Xmodem.Packet.Ack:
-            self._logger.error("Failed to get ACK ({})".format(response[0]))
+            self._logger.error("Failed to get ACK (%s)", ascii(response[0]))
             return False
 
         # Use the next packet ID next time
@@ -271,13 +292,30 @@ class Xmodem:
             Self
 
         :return True:
-            Always
+            Transmission ended successfully
+        :return False:
+            Ending transmission failed
         """
 
         # Stop transmission
-        self._device.write([Xmodem.Packet.EndOfTransmission])
+        self._device.write(bytearray([Xmodem.Packet.EndOfTransmission]))
 
-        return True
+        # Try for 30 seconds to get the last NAK, discarding single bytes until
+        # we timeout or get a NAK
+        beginTime = time.time()
+        while (time.time() - beginTime) < 30:
+            # Try reading a single byte from the serial device
+            start = self._device.read(1)
+            # Make sure we didn't timeout
+            if start:
+                # If we got an ACK return success
+                if start[0] == Xmodem.Packet.Ack:
+                    return True
+                # Log the non-ACK byte
+                else:
+                    self._logger.debug(start)
+
+        return False
 
     def transfer(self, data, packetSize = None):
         """Transfers data using XMODEM
@@ -297,28 +335,25 @@ class Xmodem:
         :return False
             Failed to send file
         """
-
-        if packetSize == None:
+        # Use a packet size of 1024 (XMODEM-1K) by default
+        if packetSize is None:
             packetSize = 1024
-
+        # Verify that the packet size is valid
         if packetSize not in Xmodem.Packet.TransferSizes:
             raise ValueError("Can't use packet size of {}!".format(packetSize))
 
-        # Guilty until proven innocent
+        # Result of transfer is failure until proven otherwise
         success = False
-
+        # Number of bytes from data that we have sent to the modem
         count = 0
-
-        # Make sure nothing is left over
-        self._clear()
 
         # If we fail to kick off transmission, that's a paddlin'
         if not self._startTransmission():
             return False
 
-        self._clear()
-
+        # Try sending the data to the modem
         while True:
+            # Delay a little bit to help with stability
             time.sleep(0.01)
 
             # Try to read the next chunk of data
@@ -332,10 +367,11 @@ class Xmodem:
             # If we fail to send the data, stop
             if not self._sendData(packetData = packetData):
                 break
-
+            # Use the next chunk of data
             count += len(packetData)
 
         # Let the device know we're done
-        self._endTransmission()
+        if not self._endTransmission():
+            return False
 
         return success

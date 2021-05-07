@@ -12,3 +12,12 @@ __pycache__
 
 # Package Directories
 *.egg-info
+
+# Config files
+config.yaml
+
+# Firmware Blobs
+*.bin
+
+# Pylint Config
+.pylintrc
