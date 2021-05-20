@@ -13,12 +13,14 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import nimbelink.cell as cell
 import nimbelink.command as command
 import nimbelink.config as config
+import nimbelink.devkits as devkits
 import nimbelink.ui as ui
 import nimbelink.utils as utils
 
 __all__ = [
     "cell",
     "config",
+    "devkits",
     "ui",
     "utils"
 ]

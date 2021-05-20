@@ -45,6 +45,19 @@ class Skywire(object):
         return self._interface
 
     @property
+    def host(self):
+        """Gets our host
+
+        :param self:
+            Self
+        :return:
+        :rtype: host.Host
+        """
+
+        raise NotImplementedError("{c} doesn't implement {c}.host !"
+                                            .format(c=self.__class__.__name__))
+
+    @property
     def networkMode(self):
         """Gets the current network mode
 
@@ -103,3 +116,44 @@ class Skywire(object):
 
         if not response:
             raise modem.AtError(response, "Failed to set network mode")
+
+    def reboot(self) -> None:
+        """Gracefully reboot the modem
+
+        :param self:
+            Self
+
+        :return: None
+        :rtype: None
+        """
+
+        raise NotImplementedError("{} doesn't implement reboot()!"
+                                            .format(self.__class__.__name__))
+
+    def shutdown(self) -> None:
+        """Gracefully shut down the modem
+
+        :param self:
+            Self
+
+        :return: None
+        :rtype: None
+        """
+
+        raise NotImplementedError("{} doesn't implement shutdown()!"
+                                            .format(self.__class__.__name__))
+
+    def reset(self) -> None:
+        """Hard reset the modem
+
+        WARNING: It is recommended to detach from the network before hard
+        resetting the modem.
+
+        :param self:
+            Self
+
+        :return: None
+        :rtype: None
+        """
+
+        self.host.reset()

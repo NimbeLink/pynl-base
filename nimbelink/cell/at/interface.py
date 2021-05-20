@@ -67,6 +67,20 @@ class Interface(object):
         # Clear out to begin with
         self._clear()
 
+    @property
+    def device(self) -> serial.Serial:
+        """Gets our serial port
+
+        :param self:
+            Self
+
+        :return:
+            The serial device used in our interface
+        :rtype: serial.Serial
+        """
+
+        return self._device
+
     def _clear(self):
         """Clears our device's input/output buffers
 
