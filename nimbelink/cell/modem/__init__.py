@@ -10,10 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from nimbelink.cell.modem.app import App
 from nimbelink.cell.modem.atError import AtError
 
 __all__ = [
-    "App",
     "AtError"
 ]
