@@ -121,7 +121,7 @@ class App:
             # If we don't have a kernel log serial port to use, we won't be able
             # to facilitate this
             if self._nano._kernelLogDevice == None:
-                raise OSError("Cannot perform update with kernel logging serial port")
+                raise OSError("Cannot perform update without kernel logging serial port")
 
             # Open the file before trying to start the update, as we don't want
             # to have DFU waiting for us if we're just going to fail to open the

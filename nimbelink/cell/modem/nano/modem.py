@@ -150,7 +150,7 @@ class SkywireNano(skywire.Skywire):
             timeout = 5
 
         try:
-            self.at.getUrc("READY", timeout = timeout)
+            self.at.getUrc(pattern = r".*READY", timeout = timeout)
 
         except at.Interface.CommError:
             raise modem.AtError(None, "Failed to detect boot")
@@ -176,7 +176,7 @@ class SkywireNano(skywire.Skywire):
 
         # Wait for the +RESET URC
         try:
-            self.at.getUrc(r"\+RESET")
+            self.at.getUrc(pattern = r"\+RESET")
         except at.Interface.CommError:
             raise modem.AtError(None, "Failed to get +RESET URC")
 
@@ -201,7 +201,7 @@ class SkywireNano(skywire.Skywire):
 
         # Wait for the +SHUTDOWN URC
         try:
-            self.at.getUrc(r"\+SHUTDOWN")
+            self.at.getUrc(pattern = r"\+SHUTDOWN")
         except at.Interface.CommError:
             raise modem.AtError(None, "Failed to get +SHUTDOWN URC")
 

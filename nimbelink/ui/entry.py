@@ -49,7 +49,17 @@ class Entry:
             sys.stdout.write("{}".format(self._prompt))
 
             if self._currentValue != None:
-                sys.stdout.write(" (current {})".format(self._currentValue))
+                sys.stdout.write(" (current ")
+
+                if isinstance(self._currentValue, str):
+                    sys.stdout.write("'")
+
+                sys.stdout.write("{}".format(self._currentValue))
+
+                if isinstance(self._currentValue, str):
+                    sys.stdout.write("'")
+
+                sys.stdout.write(")")
 
             sys.stdout.write(": ")
             sys.stdout.flush()
