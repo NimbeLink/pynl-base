@@ -13,5 +13,5 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 from nimbelink.cell.modem.atError import AtError
 
 __all__ = [
-    "AtError"
+    "AtError",
 ]
