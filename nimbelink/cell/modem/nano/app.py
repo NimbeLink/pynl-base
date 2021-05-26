@@ -19,7 +19,7 @@ import nimbelink.utils as utils
 
 from nimbelink.cell.modem.nano.urcs import Urcs
 
-class App:
+class App(skywire.App):
     """A Skywire Nano modem's application
     """
 
@@ -69,7 +69,7 @@ class App:
                 raise modem.AtError(response, "Invalid app version response")
 
             # Make sure we remove any whitespace
-            versions.append(modem.App.Version(name = fields[1].strip(), value = fields[2].strip()))
+            versions.append(self.Version(name = fields[1].strip(), value = fields[2].strip()))
 
         # If there aren't two versions, that's a paddlin'
         if len(versions) != 2:
@@ -90,7 +90,7 @@ class App:
 
         # The modem version is just a single string, so add our own identifier
         # for it
-        versions.append(modem.App.Version(name = "MFW", value = lines[0]))
+        versions.append(self.Version(name = "MFW", value = lines[0]))
 
         return versions
 

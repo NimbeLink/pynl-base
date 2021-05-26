@@ -11,13 +11,11 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import nimbelink.cell.modem as modem
+import nimbelink.cell.modem.skywire as skywire
 
-class Sim:
+class Sim(skywire.Sim):
     """Skywire Nano SIM resources
     """
-
-    Count = 2
-    """The Skywire Nano supports up to 2 SIMs"""
 
     def __init__(self, nano):
         """Creates a new GPIO sub-module
@@ -29,6 +27,8 @@ class Sim:
 
         :return none:
         """
+
+        super(Sim, self).__init__(count = 2)
 
         self._nano = nano
 

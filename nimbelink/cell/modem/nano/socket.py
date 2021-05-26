@@ -1,5 +1,5 @@
 """
-A Skywire Nano socket
+A Skywire Nano socket factory
 
 (C) NimbeLink Corp. 2021
 
@@ -13,9 +13,10 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import socket
 
 import nimbelink.cell.modem as modem
+import nimbelink.cell.modem.skywire as skywire
 
-class Socket(object):
-    """A Skywire Nano socket
+class Socket(skywire.Socket):
+    """A Skywire Nano socket factory
     """
 
     def __init__(self, nano):
@@ -56,7 +57,10 @@ class Socket(object):
 
         return instance
 
-    class Instance:
+    class Instance(skywire.Socket.Instance):
+        """A usable Skywire Nano socket instance
+        """
+
         def __init__(self, nano):
             """Creates a new socket instance
 
@@ -73,17 +77,6 @@ class Socket(object):
             self.type = None
 
             self.recvTimeout = 60
-
-        def __del__(self):
-            """Destructs the socket instance
-
-            :param self:
-                Self
-
-            :return none:
-            """
-
-            self.close()
 
         def create(
             self,
