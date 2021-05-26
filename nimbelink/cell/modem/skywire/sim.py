@@ -14,8 +14,29 @@ class Sim:
     """Skywire modem SIM utilities
     """
 
-    Count = 0
-    """The maximum number of SIMs that can be available on this modem"""
+    def __init__(self, count: int) -> None:
+        """Creates a new SIM sub-module
+
+        :param self:
+            Self
+        :param count:
+            How many SIMs are available
+
+        :return none:
+        """
+
+        self._count = count
+    def __len__(self) -> int:
+        """Gets the number of SIMs available
+
+        :param self:
+            Self
+
+        :return int:
+            The number of SIMs available
+        """
+
+        return self._count
 
     def setActive(self, index: int) -> None:
         """Sets the currently-selected SIM
