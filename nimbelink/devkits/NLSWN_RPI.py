@@ -9,86 +9,96 @@ of this software is permitted. Portions of this software may be subject to third
 party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
+
 import time
 import typing
 
 # Try importing the RPi.GPIO library
-# NOTE: pylint might give errors for this module that don't actually exist
+#
+# Note: pylint might give errors for this module if it doesn't actually exist.
 import RPi.GPIO
 
-import nimbelink.devkits.host as host
+import nimbelink.cell.modem.skywire as skywire
 
-# TODO: Get a product name for Ian's Raspberry Pi HAT
-class NLSWN_RPI(host.Host):
-    """Use the GPIO pins on the raspberry pi to read and drive the GPIO pins
-    on the Nano
+class NLSWN_RPI(skywire.Host):
+    """Use the GPIO pins on the raspberry pi to read and drive the GPIO pins on
+    the Nano
     """
 
-    class GPIO(host.Host.GPIO):
+    class Gpio(skywire.Gpio):
         """GPIO pin control and configuration for the NLSWN_RPI HAT
         """
 
-        # Map of Nano pins to Raspberry Pi pins
-        PINS = {
-            # Nano Pin : (Raspberry Pi Pin, Mode)
-            "IO5": (21, RPi.GPIO.OUT),
-            "nRESET": (20, RPi.GPIO.IN),
-        }
-
         def __init__(self):
-            super().__init__()
+            """Creates a new GPIO module
+
+            :param self:
+                Self
+
+            :return none:
+            """
+
+            super(NLSWN_RPI.Gpio, self).__init__(
+                pins = [
+                    skywire.Gpio.Pin(
+                        pin = 21,
+                        name = "IO5"
+                    ),
+                    skywire.Gpio.Pin(
+                        pin = 20,
+                        name = "nRESET"
+                    )
+                ]
+            )
+
             # Set the pin naming scheme to the BCM scheme
             RPi.GPIO.setmode(RPi.GPIO.BCM)
 
             # Initialize all of the defined pins
-            for nanoPin in self.PINS:
-                RPi.GPIO.setup(self.PINS[nanoPin][0], self.PINS[nanoPin][1])
+            RPi.GPIO.setup(self["IO5"].pin, RPi.GPIO.OUT)
+            RPi.GPIO.setup(self["nRESET"].pin, RPi.GPIO.IN)
 
-        def read(self, gpioPin: typing.Union[int, str]) -> bool:
-            """Read the state of a GPIO pin on the NLSWN_RPI host
+    def read(self, pins: typing.List[int]) -> typing.List[int]:
+        """Read the state of a GPIO pin on the NLSWN_RPI host
 
-            :param gpioPin: The name or number of the GPIO pin on the Nano
+        :param self:
+            Self
+        :param pins:
+            The host pins to read
 
-            :return: The state of the host pin
-            :rtype: bool
-            """
+        :return List[int]:
+            The states of the host pins
+        """
 
-            if isinstance(gpioPin, str):
-                # By name
-                return RPi.GPIO.input(self.PINS[gpioPin][0])
-            elif isinstance(gpioPin, int):
-                # By number
-                pinString = "IO{}".format(gpioPin)
-                return RPi.GPIO.input(self.PINS[pinString][0])
-            else:
-                raise TypeError("{}.read() doesn't take {}!"
-                                .format(self.__class__.__name__, type(gpioPin)))
+        return [RPi.GPIO.input(pin.pin) for pin in pins]
 
-        def write(self, gpioPin: typing.Union[int, str], state: bool) -> None:
-            """Manipulate the state of a host pin connected to the pin
-            specified by gpioPin
+    def write(self, pins: typing.List[int], states: typing.List[int]) -> None:
+        """Manipulate the state of a host pin connected to the pin specified by
+        pin
 
-            :param gpioPin:
-                The name or number of the pin on the Nano
+        :param self:
+            Self
+        :param pins:
+            The pins to write
+        :param states:
+            The states to set the pins to
 
-            :return: None
-            :rtype: None
-            """
-            if isinstance(gpioPin, str):
-                # By name
-                RPi.GPIO.output(self.PINS[gpioPin][0], state)
-            elif isinstance(gpioPin, int):
-                # By number
-                pinString = "IO{}".format(gpioPin)
-                RPi.GPIO.output(self.PINS[pinString][0], state)
-            else:
-                raise TypeError("{}.write() doesn't take {}!"
-                                .format(self.__class__.__name__, type(gpioPin)))
+        :return none:
+        """
+
+        for i in range(len(pins)):
+            RPi.GPIO.output(pins[i].pin, states[i])
 
     def __init__(self) -> None:
-        super().__init__()
+        """Creates a new NLSWN RPI
 
-        self._gpio = self.GPIO()
+        :param self:
+            Self
+
+        :return none:
+        """
+
+        super().__init__(gpio = NLSWN_RPI.Gpio())
 
     def reset(self) -> None:
         """Resets the modem by pulling the nRESET pin low
@@ -96,31 +106,63 @@ class NLSWN_RPI(host.Host):
         :param self:
             Self
 
-        :return: None
-        :rtype: None
+        :return none:
         """
 
         # TODO: Until we get a MOSFET/Transistor onto the HAT we have to set to
-        # output, then reset to input. This will be replaced with calls
-        # to read()/write()
+        # output, then reset to input. This will be replaced with calls to
+        # read()/write()
 
         # Set the reset pin low
         RPi.GPIO.setup(
-            self._gpio.PINS["nRESET"][0],
+            self.gpio["nRESET"].pin,
             RPi.GPIO.OUT,
-            initial=False
+            initial = False
         )
+
         time.sleep(0.05)
+
         # Reset the reset pin to an input
-        RPi.GPIO.setup(self._gpio.PINS["nRESET"][0], RPi.GPIO.IN)
+        RPi.GPIO.setup(self.gpio["nRESET"].pin, RPi.GPIO.IN)
 
     def __enter__(self):
+        """Enters the NLSWN RPI as a context
+
+        :param self:
+            Self
+
+        :return NLSWN_RPI:
+            Us
+        """
+
         return self
 
     def __exit__(self, exceptionType, exceptionValue, exceptionTraceback):
+        """Exits the NLSWN RPI context
+
+        :param self:
+            Self
+        :param exceptionType:
+            The exception type, if any
+        :param exceptionValue:
+            The exception value, if any
+        :param exceptionTraceback:
+            The exception traceback, if any
+
+        :return none:
+        """
+
         # Clean up the GPIO
         RPi.GPIO.cleanup()
 
     def __del__(self):
+        """Deletes the NLSWN RPI
+
+        :param self:
+            Self
+
+        :return none:
+        """
+
         # Clean up the GPIO
         RPi.GPIO.cleanup()
