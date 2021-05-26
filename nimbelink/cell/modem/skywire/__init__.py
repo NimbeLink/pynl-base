@@ -11,9 +11,17 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 from nimbelink.cell.modem.skywire.modem import Skywire
+
 from nimbelink.cell.modem.skywire.app import App
+from nimbelink.cell.modem.skywire.gpio import Gpio
+from nimbelink.cell.modem.skywire.sim import Sim
+from nimbelink.cell.modem.skywire.socket import Socket
 
 __all__ = [
     "Skywire",
+
     "App",
+    "Gpio",
+    "Sim",
+    "Socket",
 ]

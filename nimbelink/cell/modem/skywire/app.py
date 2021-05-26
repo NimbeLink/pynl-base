@@ -10,6 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import typing
+
 class App:
     """Skywire modem application utilities
     """
@@ -83,3 +85,16 @@ class App:
             """
 
             return not (self == other)
+
+    @property
+    def versions(self) -> typing.List["App.Version"]:
+        """Gets our application version(s)
+
+        :param self:
+            Self
+
+        :return List[App.Version]:
+            Our application version(s)
+        """
+
+        raise NotImplementedError("@versions not implemented by {}".format(self.__class__.__name__))
