@@ -12,27 +12,68 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 import time
 
+import nimbelink.cell.at as at
 import nimbelink.cell.modem as modem
+
+from nimbelink.cell.modem.skywire.app import App
+from nimbelink.cell.modem.skywire.gpio import Gpio
+from nimbelink.cell.modem.skywire.host import Host
+from nimbelink.cell.modem.skywire.sim import Sim
+from nimbelink.cell.modem.skywire.socket import Socket
 
 class Skywire(object):
     """A Skywire modem
     """
 
-    def __init__(self, interface):
+    def __init__(
+        self,
+        app: App,
+        interface: at.Interface,
+        gpio: Gpio,
+        sim: Sim,
+        socket: Socket
+    ) -> None:
         """Creates a new Skywire modem
 
         :param self:
             Self
+        :param app:
+            An app sub-module
         :param interface:
             Our AT interface
+        :param gpio:
+            A GPIO sub-module
+        :param sim:
+            A SIM sub-module
+        :param socket:
+            A socket sub-module
 
         :return none:
         """
 
+        self._app = app
         self._interface = interface
+        self._gpio = gpio
+        self._sim = sim
+        self._socket = socket
+
+        self._host = None
 
     @property
-    def at(self):
+    def app(self) -> App:
+        """Gets our app sub-module
+
+        :param self:
+            Self
+
+        :return App:
+            Our app sub-module
+        """
+
+        return self._app
+
+    @property
+    def at(self) -> at.Interface:
         """Gets our AT interface
 
         :param self:
@@ -45,17 +86,84 @@ class Skywire(object):
         return self._interface
 
     @property
-    def host(self):
+    def gpio(self) -> Gpio:
+        """Gets our GPIO sub-module
+
+        :param self:
+            Self
+
+        :return Gpio:
+            Our GPIO sub-module
+        """
+
+        return self._gpio
+
+    @property
+    def sim(self) -> Sim:
+        """Gets our SIM sub-module
+
+        :param self:
+            Self
+
+        :return Sim:
+            Our SIM sub-module
+        """
+
+        return self._sim
+
+    @sim.setter
+    def sim(self, index: int) -> None:
+        """Sets our active SIM
+
+        :param self:
+            Self
+        :param index:
+            Which SIM to set
+
+        :return none:
+        """
+
+        self._sim.setActive(index = index)
+
+    @property
+    def socket(self) -> Socket:
+        """Gets our socket sub-module
+
+        :param self:
+            Self
+
+        :return Socket:
+            Our socket sub-module
+        """
+
+        return self._socket
+
+    @property
+    def host(self) -> Host:
         """Gets our host
 
         :param self:
             Self
-        :return:
-        :rtype: host.Host
+
+        :return Host:
+            Our host
         """
 
-        raise NotImplementedError("{c} doesn't implement {c}.host !"
-                                            .format(c=self.__class__.__name__))
+        raise NotImplementedError("host() not implemented by {}".format(self.__class__.__name__))
+
+    @host.setter
+    def host(self, newHost: Host):
+        """Sets our host
+
+        :param self:
+            Self
+        :param newHost:
+            The host to use
+
+        :return none:
+        """
+
+        self._host = newHost
 
     @property
     def networkMode(self):
@@ -127,8 +235,7 @@ class Skywire(object):
         :rtype: None
         """
 
-        raise NotImplementedError("{} doesn't implement reboot()!"
-                                            .format(self.__class__.__name__))
+        raise NotImplementedError("reboot() not implemented by {}".format(self.__class__.__name__))
 
     def shutdown(self) -> None:
         """Gracefully shut down the modem
@@ -140,8 +247,7 @@ class Skywire(object):
         :rtype: None
         """
 
-        raise NotImplementedError("{} doesn't implement shutdown()!"
-                                            .format(self.__class__.__name__))
+        raise NotImplementedError("shutdown() not implemented by {}".format(self.__class__.__name__))
 
     def reset(self) -> None:
         """Hard reset the modem

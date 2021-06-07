@@ -11,8 +11,8 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 __all__ = [
-    "Host",
 ]
+
 # Conditional imports
 try:
     from nimbelink.devkits.NLSWN_RPI import NLSWN_RPI

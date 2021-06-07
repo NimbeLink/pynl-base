@@ -25,110 +25,43 @@ class SkywireNano(skywire.Skywire):
     """A Skywire modem
     """
 
-    def __init__(self, *args, kernelLogDevice = None, **kwargs):
+    def __init__(
+        self,
+        interface: at.Interface,
+        kernelLogDevice: serial.Serial = None
+    ) -> None:
         """Creates a new Skywire Nano modem
 
         :param self:
             Self
-        :param *args:
-            Positional arguments
-        :param **kwargs:
-            Keyword arguments
         :param kernelLogDevice:
             A serial port for our kernel logging output
 
         :return none:
         """
 
-        super(SkywireNano, self).__init__(*args, **kwargs)
-
-        # The host of the Nano
-        self._host = None
-
-        self._app = App(self)
-        self._gpio = Gpio(self)
-        self._sim = Sim(self)
-        self._socket = Socket(self)
+        super(SkywireNano, self).__init__(
+            app = App(self),
+            interface = interface,
+            gpio = Gpio(self),
+            sim = Sim(self),
+            socket = Socket(self)
+        )
 
         self._kernelLogDevice = kernelLogDevice
 
     @property
-    def host(self):
-        """Gets our host
+    def kernel(self) -> serial.Serial:
+        """Gets the kernel logging device
 
         :param self:
             Self
 
-        :return: The host for the Nano
-        :rtype: Host
+        :return serial.Serial:
+            The device connected to the modem's kernel log
         """
 
-        return self._host
-
-    @host.setter
-    def host(self, newHost):
-        """Sets our host
-
-        :param self:
-            Self
-
-        :return: None
-        :rtype: None
-        """
-
-        self._host = newHost
-
-    @property
-    def app(self):
-        """Gets our app
-
-        :param self:
-            Self
-
-        :return App:
-            Our app
-        """
-
-        return self._app
-
-    @property
-    def gpio(self):
-        """Gets our GPIOs
-
-        :param self:
-            Self
-
-        :return Gpio:
-            Our GPIOs
-        """
-
-        return self._gpio
-
-    @property
-    def sim(self):
-        """Gets our SIM
-
-        :param self:
-            Self
-
-        :return Sim:
-            Our SIM
-        """
-
-        return self._sim
-
-    @property
-    def socket(self):
-        """Gets our socket
-
-        :param self:
-            Self
-
-        :return Socket:
-            Our socket
-        """
-
-        return self._socket
+        return self._kernelLogDevice
 
     def waitForBoot(self, timeout = None):
         """Waits for the Skywire Nano to boot
@@ -164,8 +97,7 @@ class SkywireNano(skywire.Skywire):
         :raise AtError:
             Failed to either send reboot command or get +RESET URC
 
-        :return: None
-        :rtype: None
+        :return none:
         """
 
         # Tell the modem to reboot
@@ -189,8 +121,7 @@ class SkywireNano(skywire.Skywire):
         :raise AtError:
             Failed to send shutdown command or get +SHUTDOWN URC
 
-        :return: None
-        :rtype: None
+        :return none:
         """
 
         # Tell the modem to shutdown
@@ -205,30 +136,22 @@ class SkywireNano(skywire.Skywire):
         except at.Interface.CommError:
             raise modem.AtError(None, "Failed to get +SHUTDOWN URC")
 
-    @property
-    def kernel(self) -> serial.Serial:
-        """Gets the kernel logging device
+    def enterSerialBootloaderRecovery(self) -> None:
+        """Reset the modem and have it enter the serial bootloader recovery
 
         :param self:
             Self
 
-        :return:
-            The device connected to the modem's kernel log
-        :rtype: serial.Serial
-        """
-
-        return self._kernelLogDevice
-
-    def enterSerialBootloaderRecovery(self) -> None:
-        """Reset the modem and have it enter the serial bootloader recovery
+        :return none:
         """
 
         # Pull IO5 High in order to enter recovery on next boot
         self.host.gpio.write("IO5", True)
 
         # Shut down the modem safely
-        # Note: We must do a shutdown, then a reset. A reboot doesn't seem to
-        # be reliable
+        #
+        # Note: We must do a shutdown, then a reset. A reboot doesn't seem to be
+        # reliable.
         self.shutdown()
 
         # Reset the modem
@@ -236,6 +159,11 @@ class SkywireNano(skywire.Skywire):
 
     def exitSerialBootloaderRecovery(self) -> None:
         """Exit serial bootloader recovery and have the modem start normally
+
+        :param self:
+            Self
+
+        :return none:
         """
 
         # Pull IO5 to GND
@@ -244,6 +172,8 @@ class SkywireNano(skywire.Skywire):
         # Reset modem in order to leave serial bootloader recovery
         self.reset()
 
-        # Wait for the device to boot, since we are probably doing a DFU,
-        # this may take longer than a normal boot
+        # Wait for the device to boot
+        #
+        # Since we are probably doing a DFU, this may take longer than a normal
+        # boot.
         self.waitForBoot(60)

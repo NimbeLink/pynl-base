@@ -12,6 +12,16 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 from nimbelink.cell.modem.nano.modem import SkywireNano
 
+from nimbelink.cell.modem.nano.app import App
+from nimbelink.cell.modem.nano.gpio import Gpio
+from nimbelink.cell.modem.nano.sim import Sim
+from nimbelink.cell.modem.nano.socket import Socket
+
 __all__ = [
-    "SkywireNano"
+    "SkywireNano",
+
+    "App",
+    "Gpio",
+    "Sim",
+    "Socket",
 ]

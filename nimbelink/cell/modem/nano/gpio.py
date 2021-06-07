@@ -11,17 +11,11 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import nimbelink.cell.modem as modem
+import nimbelink.cell.modem.skywire as skywire
 
-class Gpio:
+class Gpio(skywire.Gpio):
     """Skywire Nano GPIO resources
     """
-
-    Count   = 32
-    """The number of available GPIOs on a Skywire Nano"""
-
-    Output  = 0
-    Input   = 1
-    """Configuration values for GPIOs"""
 
     def __init__(self, nano):
         """Creates a new GPIO sub-module
@@ -34,14 +28,19 @@ class Gpio:
         :return none:
         """
 
+        # Make a simple pin for each of our 32 GPIOs
+        super(Gpio, self).__init__(
+            pins = [skywire.Gpio.Pin(pin = i) for i in range(32)]
+        )
+
         self._nano = nano
 
-    def _makeParameters(self, gpios, things = None):
+    def _makeParameters(self, pins, things = None):
         """Makes GPIO masks or single values for an operation
 
         :param self:
             Self
-        :param gpios:
+        :param pins:
             The GPIOs to do this for
         :param things:
             The values being applied to the GPIOs
@@ -53,18 +52,18 @@ class Gpio:
         thingMask = None
 
         # If this is just a single set, use the single GPIO setter
-        if len(gpios) < 2:
-            gpioMask = "{}".format(gpios[0])
+        if len(pins) < 2:
+            gpioMask = "{}".format(pins[0])
 
             if things != None:
                 thingMask = "{}".format(things[0])
 
         # Else, send the mask
         else:
-            gpioMask = [0] * self.Count
+            gpioMask = [0] * len(self)
 
             if things != None:
-                thingMask = [0] * self.Count
+                thingMask = [0] * len(self)
 
             # The GPIOs can be in any order, so stick their things into the
             # correct positions
@@ -73,11 +72,11 @@ class Gpio:
             # lists, but our mask string will need big-endian ordering for bits
             # (as if printing an integer in binary), so we'll need to reverse
             # the lists when done before making the string.
-            for i in range(len(gpios)):
-                gpioMask[gpios[i]] = 1
+            for i in range(len(pins)):
+                gpioMask[pins[i]] = 1
 
                 if things != None:
-                    thingMask[gpios[i]] = things[i]
+                    thingMask[pins[i]] = things[i]
 
             gpioMask.reverse()
             gpioMask = "".join([str(gpio) for gpio in gpioMask])
@@ -88,12 +87,12 @@ class Gpio:
 
         return (gpioMask, thingMask)
 
-    def _parseParameter(self, gpios, thing):
+    def _parseParameter(self, pins, thing):
         """Parses a GPIO response
 
         :param self:
             Self
-        :param gpios:
+        :param pins:
             The GPIOs from the original command
         :param thing:
             The response to the command
@@ -113,33 +112,33 @@ class Gpio:
 
         # If there's just the one GPIO, the response might've been either a mask
         # or a single value, depending on how exactly the command was sent
-        if len(gpios) < 2:
+        if len(pins) < 2:
             # If there's only one value in the response, use it as-is
             if len(values) < 2:
                 return values
 
             # Else, use the value for the GPIO
             else:
-                return [values[gpios[0]]]
+                return [values[pins[0]]]
 
-        states = [None] * len(gpios)
+        states = [None] * len(pins)
 
         # Get the states of each GPIO we queried
-        for i in range(len(gpios)):
+        for i in range(len(pins)):
             # If this GPIO isn't in the response value, that's a paddlin'
-            if gpios[i] >= len(values):
+            if pins[i] >= len(values):
                 return None
 
-            states[i] = int(values[gpios[i]])
+            states[i] = int(values[pins[i]])
 
         return states
 
-    def setConfigs(self, gpios, configs):
+    def setConfigs(self, pins, configs):
         """Configures GPIOs as inputs and/or outputs
 
         :param self:
             Self
-        :param gpios:
+        :param pins:
             A list of the GPIOs to change
         :param configs:
             A list of the configurations to set the GPIOs to
@@ -153,11 +152,11 @@ class Gpio:
         """
 
         # Make sure their lists are the same length
-        if len(gpios) != len(configs):
+        if len(pins) != len(configs):
             raise ValueError("Need matching GPIOs and states")
 
         # Get the parameters for this
-        gpioParam, configParam = self._makeParameters(gpios, configs)
+        gpioParam, configParam = self._makeParameters(pins, configs)
 
         # Configure the GPIOs
         response = self._nano.at.sendCommand("AT#GPIO={},2,{}".format(gpioParam, configParam))
@@ -166,27 +165,27 @@ class Gpio:
         if not response:
             raise modem.AtError(response)
 
-    def getConfigs(self, gpios):
+    def getConfigs(self, pins):
         """Gets GPIO configurations
 
         :param self:
             Self
-        :param gpios:
+        :param pins:
             A list of the GPIOs to query
 
-        :return None:
+        :raise AtError:
             Always
         """
 
         # Not supported by the Skywire Nano
-        return None
+        raise modem.AtError(None, "Skywire Nano GPIO configuration getting not supported")
 
-    def write(self, gpios, states):
+    def write(self, pins, states):
         """Writes GPIO outputs
 
         :param self:
             Self
-        :param gpios:
+        :param pins:
             A list of the GPIOs to change
         :param states:
             A list of the states to set the respective GPIOs to
@@ -200,11 +199,11 @@ class Gpio:
         """
 
         # Make sure their lists are the same length
-        if len(gpios) != len(states):
+        if len(pins) != len(states):
             raise ValueError("Need matching GPIOs and states")
 
         # Get the parameters for this
-        gpioParam, stateParam = self._makeParameters(gpios, states)
+        gpioParam, stateParam = self._makeParameters(pins, states)
 
         # Set the GPIO states
         response = self._nano.at.sendCommand("AT#GPIO={},1,{}".format(gpioParam, stateParam))
@@ -213,12 +212,12 @@ class Gpio:
         if not response:
             raise modem.AtError(response)
 
-    def read(self, gpios):
+    def read(self, pins):
         """Reads GPIO states
 
         :param self:
             Self
-        :param gpios:
+        :param pins:
             A list of the GPIOs to query
 
         :raise AtError:
@@ -229,7 +228,7 @@ class Gpio:
         """
 
         # Get the parameters for this
-        gpioParam, _ = self._makeParameters(gpios)
+        gpioParam, _ = self._makeParameters(pins)
 
         # Query the GPIO states
         response = self._nano.at.sendCommand("AT#GPIO={},0".format(gpioParam))
@@ -252,4 +251,4 @@ class Gpio:
             raise modem.AtError(response, "Invalid GPIO states")
 
         # Parse the response and get the states
-        return self._parseParameter(gpios, fields[1].strip())
+        return self._parseParameter(pins, fields[1].strip())

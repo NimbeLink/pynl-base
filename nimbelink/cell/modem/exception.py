@@ -1,5 +1,5 @@
 """
-An error on a Skywire modem
+Errors on a Skywire modem
 
 (C) NimbeLink Corp. 2021
 
@@ -10,7 +10,29 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-class AtError(Exception):
+class Error(Exception):
+    """A generic modem-generated error
+    """
+
+    def __init__(self, message = None):
+        """Creates a new modem error
+
+        :param self:
+            Self
+        :param message:
+            A message about the error
+
+        :return none:
+        """
+
+        if message == None:
+            message = "Modem error occurred"
+
+        self._message = message
+
+        super(Error, self).__init__(self._message)
+
+class AtError(Error):
     """An error that occurs when an AT command fails with an error
     """
 
@@ -22,7 +44,7 @@ class AtError(Exception):
         :param response:
             The AT command's response
         :param message:
-            A message about the failure
+            A message about the error
 
         :return none:
         """
