@@ -11,14 +11,13 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 from distutils.core import setup
+from setuptools import find_packages
 
 setup(
     name = "pynl-base",
     description = "NimbeLink library base",
     version = "1.0.0",
-    packages = [
-        "nimbelink"
-    ],
+    packages = find_packages(),
     install_requires = [
         "pyserial>=3.4",
         "PyYAML>=5.3",
