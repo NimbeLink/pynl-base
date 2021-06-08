@@ -10,11 +10,11 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from nimbelink.cell.at.cmeError import CmeError
-from nimbelink.cell.at.cmsError import CmsError
-from nimbelink.cell.at.interface import Interface
-from nimbelink.cell.at.response import Response
-from nimbelink.cell.at.result import Result
+from .cmeError import CmeError
+from .cmsError import CmsError
+from .interface import Interface
+from .response import Response
+from .result import Result
 
 __all__ = [
     "CmeError",

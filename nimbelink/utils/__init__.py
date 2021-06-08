@@ -10,8 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from nimbelink.utils.wsl import Wsl
-from nimbelink.utils.xmodem import Xmodem
+from .wsl import Wsl
+from .xmodem import Xmodem
 
 __all__ = [
     "Wsl",

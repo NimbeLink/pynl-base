@@ -10,12 +10,12 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-import nimbelink.cell as cell
-import nimbelink.command as command
-import nimbelink.config as config
-import nimbelink.devkits as devkits
-import nimbelink.ui as ui
-import nimbelink.utils as utils
+from . import cell
+from . import command
+from . import config
+from . import devkits
+from . import ui
+from . import utils
 
 __all__ = [
     "cell",

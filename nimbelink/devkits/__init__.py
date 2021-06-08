@@ -15,7 +15,7 @@ __all__ = [
 
 # Conditional imports
 try:
-    from nimbelink.devkits.NLSWN_RPI import NLSWN_RPI
+    from .NLSWN_RPI import NLSWN_RPI
     __all__.append("NLSWN_RPI")
 except ModuleNotFoundError:
     # Raspberry Pi Host unavailable

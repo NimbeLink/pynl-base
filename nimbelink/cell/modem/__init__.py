@@ -10,10 +10,16 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from nimbelink.cell.modem.exception import Error
-from nimbelink.cell.modem.exception import AtError
+from .exception import Error
+from .exception import AtError
+
+from . import skywire
+from . import nano
 
 __all__ = [
     "Error",
     "AtError",
+
+    "skywire",
+    "nano"
 ]
