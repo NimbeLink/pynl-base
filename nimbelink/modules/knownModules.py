@@ -1,5 +1,5 @@
 """
-The NimbeLink cellular package
+All available NimbeLink modules
 
 (C) NimbeLink Corp. 2021
 
@@ -10,12 +10,9 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from . import at
-from . import modem
-from . import network
+from nimbelink.modules.module import Module
 
-__all__ = [
-    "at",
-    "modem",
-    "network"
+KnownModules = [
+    Module(name = "nl_testing")
 ]
+"""The available modules that we know about"""
