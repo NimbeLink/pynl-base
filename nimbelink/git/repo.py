@@ -15,6 +15,8 @@ import subprocess
 import tempfile
 import typing
 
+from .host import Host
+
 class Repo:
     """A Git repository
     """
@@ -107,6 +109,8 @@ class Repo:
 
         self._directory = directory
 
+        self._host = None
+
     @property
     def directory(self) -> str:
         """Gets the repository's local directory
@@ -119,6 +123,34 @@ class Repo:
         """
 
         return self._directory
+
+    @property
+    def host(self) -> Host:
+        """Gets our remote host
+
+        :param self:
+            Self
+
+        :return Host:
+            Our remote host
+        """
+
+        return self._host
+
+    @host.setter
+    def host(self, host) -> None:
+        """Sets our remote host
+
+        :param self:
+            Self
+        :param host:
+            Our remote host
+
+        :return none:
+        """
+
+        self._host = host
+        self._host.repo = self
 
     def _runCommand(self, command: typing.List[str]) -> str:
         """Runs a Git command in our repository
@@ -145,34 +177,6 @@ class Repo:
             return None
 
         return output.decode().rstrip()
-
-    def getName(self, remoteName: str = "origin") -> str:
-        """Gets the name of this repository
-
-        :param self:
-            Self
-        :param remoteName:
-            The name of the remote to use
-
-        :return None:
-            Failed to get name
-        :return str:
-            The name of the repository
-        """
-
-        # Get the remote URL
-        remoteUrl = self._runCommand(["remote", "show", remoteName])
-
-        # If that failed, that's a paddlin'
-        if remoteUrl is None:
-            return None
-
-        # Get the name of the repo
-        #
-        # The URL will of course have '/' separating each field, with the last
-        # being hte name of the repository. The repository's name might end with
-        # '.git', so also strip that off.
-        return remoteUrl.split("/")[-1].split(".")[0]
 
     def getBranch(self) -> str:
         """Gets the branch we're on
