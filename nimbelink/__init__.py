@@ -36,7 +36,7 @@ def __importModules():
     """
 
     import importlib
-    import os
+    import sys
 
     import nimbelink.modules as modules
 
@@ -45,12 +45,12 @@ def __importModules():
             # Try to import the module that may or may not be locally available
             importedModule = importlib.import_module(name = module.name)
 
-            # That worked, so add its root directory to our submodule search
-            # path so it can be looked up as if under our 'nimbelink' root
-            # package
-            globals()["__spec__"].submodule_search_locations.append(
-                os.path.dirname(importedModule.__file__)
-            )
+            # That worked, so add it as a module under our namespace
+            sys.modules["nimbelink." + module.alias] = importedModule
+
+            # Make sure the module can be accessed directly without needing to
+            # import it 'from' us
+            globals()[module.alias] = importedModule
 
             # Make sure our 'all' looks like it contains this now-look-up-able
             # module
