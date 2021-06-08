@@ -18,6 +18,10 @@ setup(
     description = "NimbeLink library base",
     version = "1.0.0",
     packages = find_packages(),
+    entry_points = {
+        "console_scripts":
+            ["nl-base=nimbelink.__main__:main"]
+    },
     install_requires = [
         "pyserial>=3.4",
         "PyYAML>=5.3",
