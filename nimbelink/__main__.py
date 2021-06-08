@@ -13,6 +13,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import sys
 
 import nimbelink.command as command
+import nimbelink.modules as modules
 
 class NlCommand(command.Command):
     """Our root NimbeLink command
@@ -33,7 +34,9 @@ class NlCommand(command.Command):
             description =
                 """Handles NimbeLink Python packages
                 """,
-            subCommands = []
+            subCommands = [
+                modules.ModuleCommand()
+            ]
         )
 
     def addArguments(self, parser):
