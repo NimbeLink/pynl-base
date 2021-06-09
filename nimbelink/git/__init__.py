@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+from .bitbucket import BitBucket
 from .host import Host
 from .repo import Repo
 
@@ -17,4 +18,5 @@ __all__ = [
     "Repo",
 
     "Host",
+    "BitBucket"
 ]
