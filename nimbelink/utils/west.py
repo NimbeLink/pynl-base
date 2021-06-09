@@ -14,6 +14,8 @@ import subprocess
 import sys
 import typing
 
+import nimbelink.git as git
+
 class West:
     """Tools for working with west
     """
@@ -54,6 +56,54 @@ class West:
             return None
 
         return output.decode().rstrip()
+
+    @staticmethod
+    def init(host: git.Host, ref: str = None) -> bool:
+        """Initializes a new west environment
+
+        :param host:
+            The remote repository to check out and use
+        :param ref:
+            The Git reference to check out
+
+        :return True:
+            West initialized
+        :return False:
+            Failed to initialize west
+        """
+
+        commands = ["init", "-m", host.url]
+
+        if ref != None:
+            commands += ["--mr", ref]
+
+        # Initialize the repository
+        output = West._runCommand(commands)
+
+        if output is None:
+            return False
+
+        return True
+
+    @staticmethod
+    def update() -> bool:
+        """Updates the west environment's dependencies
+
+        :param none:
+
+        :return True:
+            West updated
+        :return False:
+            Failed to update west
+        """
+
+        # Cheaply update the dependencies
+        output = West._runCommand(["update", "--narrow", "--fetch-opt=--depth=1"])
+
+        if output is None:
+            return False
+
+        return True
 
     @staticmethod
     def checkManifest() -> bool:
