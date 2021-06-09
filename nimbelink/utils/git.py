@@ -13,9 +13,10 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import os
 import subprocess
 import tempfile
+import typing
 
-class Git:
-    """Tools for using Git
+class GitRepo:
+    """A Git repository
     """
 
     class RefType:
@@ -47,69 +48,6 @@ class Git:
             self.commitHash = commitHash
 
     @staticmethod
-    def getBranch(directory: str = None) -> str:
-        """Gets the branch we're on
-
-        :param directory:
-            The directory containing the repository
-
-        :return None:
-            Git repository not available
-        :return String:
-            The current branch
-        """
-
-        if directory == None:
-            try:
-                directory = os.getcwd()
-            except OSError:
-                return None
-
-        try:
-            branch = subprocess.check_output([
-                "git", "-C", directory, "rev-parse", "--abbrev-ref", "HEAD"
-            ])
-
-        except subprocess.CalledProcessError:
-            return None
-
-        return branch.decode().strip()
-
-    @staticmethod
-    def getRepoDescription(directory: str = None, annotatedOnly: bool = True) -> str:
-        """Gets a repository's Git description
-
-        :param directory:
-            The directory containing the repository
-        :param annotatedOnly:
-            Only include the latest annotated tag
-
-        :return None:
-            Git repository description not available
-        :return String:
-            The Git repository description
-        """
-
-        if directory == None:
-            try:
-                directory = os.getcwd()
-            except OSError:
-                return None
-
-        commands = ["git", "-C", directory, "describe", "--always", "--long", "--dirty"]
-
-        if not annotatedOnly:
-            commands.append("--tags")
-
-        try:
-            description = subprocess.check_output(commands)
-
-        except subprocess.CalledProcessError:
-            return None
-
-        return description.decode().strip()
-
-    @staticmethod
     def _getEditor() -> str:
         """Gets the best editor to use for user input
 
@@ -117,7 +55,7 @@ class Git:
 
         :return None:
             Failed to get editor
-        :return String:
+        :return str:
             The name of the editor
         """
 
@@ -153,60 +91,190 @@ class Git:
         # No other options left for finding an editor, so we failed
         return None
 
-    @staticmethod
-    def getCommitHash(ref: str = "HEAD") -> str:
+    def __init__(self, directory: str = None) -> None:
+        """Creates a new Git repository
+
+        :param self:
+            Self
+        :param directory:
+            The directory the repo is in, if different than the current one
+
+        :return none:
+        """
+
+        if directory is None:
+            directory = os.getcwd()
+
+        self._directory = directory
+
+    @property
+    def directory(self) -> str:
+        """Gets the repository's local directory
+
+        :param self:
+            Self
+
+        :return str:
+            Our directory
+        """
+
+        return self._directory
+
+    def _runCommand(self, command: typing.List[str]) -> str:
+        """Runs a Git command in our repository
+
+        :param self:
+            Self
+        :param command:
+            The command and its arguments
+
+        :return None:
+            Command failed
+        :return str:
+            The successful command's output
+        """
+
+        try:
+            output = subprocess.check_output([
+                "git",
+                "-C",
+                self._directory
+            ] + command)
+
+        except subprocess.CalledProcessError:
+            return None
+
+        return output.decode().rstrip()
+
+    def getName(self, remoteName: str = "origin") -> str:
+        """Gets the name of this repository
+
+        :param self:
+            Self
+        :param remoteName:
+            The name of the remote to use
+
+        :return None:
+            Failed to get name
+        :return str:
+            The name of the repository
+        """
+
+        # Get the remote URL
+        remoteUrl = self._runCommand(["remote", "show", remoteName])
+
+        # If that failed, that's a paddlin'
+        if remoteUrl is None:
+            return None
+
+        # Get the name of the repo
+        #
+        # The URL will of course have '/' separating each field, with the last
+        # being hte name of the repository. The repository's name might end with
+        # '.git', so also strip that off.
+        return remoteUrl.split("/")[-1].split(".")[0]
+
+    def getBranch(self) -> str:
+        """Gets the branch we're on
+
+        :param self:
+            Self
+
+        :return None:
+            Git repository not available
+        :return str:
+            The current branch
+        """
+
+        return self._runCommand(["rev-parse", "--abbrev-ref", "HEAD"])
+
+    def getDescription(self, annotatedOnly: bool = True) -> str:
+        """Gets a repository's Git description
+
+        :param self:
+            Self
+        :param annotatedOnly:
+            Only include the latest annotated tag
+
+        :return None:
+            Git repository description not available
+        :return str:
+            The Git repository description
+        """
+
+        commands = ["describe", "--always", "--long", "--dirty"]
+
+        if not annotatedOnly:
+            commands.append("--tags")
+
+        return self._runCommand(commands)
+
+    def getCommitHash(self, ref: str = "HEAD") -> str:
         """Gets the commit hash for a reference
 
+        :param self:
+            Self
         :param ref:
             The reference whose commit hash to get
 
         :return None:
             Failed to get commit hash
-        :return String:
+        :return str:
             The commit hash
         """
 
-        try:
-            return subprocess.check_output([
-                "git", "rev-parse", "{}^{{}}".format(ref)
-            ]).decode().strip()
+        return self._runCommand(["rev-parse", "{}^{{}}".format(ref)])
 
-        except subprocess.CalledProcessError:
-            return None
+    def checkout(self, ref: str) -> bool:
+        """Checks out a reference
 
-    @staticmethod
-    def getRefType(ref: str) -> int:
+        :param self:
+            Self
+        :param ref:
+            The name of the reference to checkout
+
+        :return True:
+            Tag checked out
+        :return False:
+            Failed to check out tag
+        """
+
+        # Create a new annotated Git tag with our default subject
+        output = self._runCommand(["checkout", "{}".format(ref)])
+
+        if output is None:
+            return False
+
+        return True
+
+    def getRefType(self, ref: str = "HEAD") -> int:
         """Gets a Git reference's type
 
+        :param self:
+            Self
         :param ref:
             The Git reference to check
+
         :return None:
             Failed to check reference type
-
         :return int:
             The Git reference type
         """
 
-        try:
-            subprocess.check_call(["git", "show-ref", "--verify", "refs/tags/{}".format(ref)])
+        output = self._runCommand(["show-ref", "--verify", "refs/tags/{}".format(ref)])
 
+        if output is not None:
             return Git.RefType.Tag
 
-        except subprocess.CalledProcessError:
-            pass
+        output = self._runCommand(["show-ref", "--verify", "refs/heads/{}".format(ref)])
 
-        try:
-            subprocess.check_call(["git", "show-ref", "--verify", "refs/heads/{}".format(ref)])
-
+        if output is not None:
             return Git.RefType.Branch
-
-        except subprocess.CalledProcessError:
-            pass
 
         return Git.RefType.Commit
 
-    @staticmethod
     def generateTag(
+        self,
         name: str,
         commitHash: str = None,
         message: str = None,
@@ -218,6 +286,8 @@ class Git:
         If no method for getting a message is included, this will be a 'cheap'
         Git tag.
 
+        :param self:
+            Self
         :param name:
             The name of the tag
         :param commitHash:
@@ -236,11 +306,11 @@ class Git:
         """
 
         # If they provided a message, prioritize that
-        if message != None:
+        if message is not None:
             pass
 
         # Else, if they provided a file name, get the message from it
-        elif fileName != None:
+        elif fileName is not None:
             with open(fileName, "r") as messageFile:
                 message = messageFile.read()
 
@@ -262,10 +332,10 @@ class Git:
                 # Steal the text
                 message = commitFile.read()
 
-        commitCommands = ["git", "tag", name]
+        commitCommands = ["tag", name]
 
         # If we have a specific commit to target, do so
-        if commitHash != None:
+        if commitHash is not None:
             commitCommands += ["{}".format(commitHash)]
 
         # If we have a message, make this an annotated tag
@@ -273,29 +343,29 @@ class Git:
         # Make sure any literal '#' characters are left alone by only cleaning
         # up whitespace. Otherwise Git will remove those, since it'll think
         # they're supposed to be comments.
-        if message != None:
+        if message is not None:
             commitCommands += ["-a", "--cleanup=whitespace", "-m", "{}".format(message)]
 
         # Generate the tag
-        try:
-            subprocess.check_output(commitCommands)
+        output = self._runCommand(commitCommands)
 
-        except subprocess.CalledProcessError:
+        if output is None:
             return None
 
         # Get the commit hash of the commit we just tagged, and decode the
         # result of it and strip any line endings
-        commitHash = Git.getCommitHash(ref = name)
+        commitHash = self.getCommitHash(ref = name)
 
-        if commitHash == None:
+        if commitHash is None:
             return None
 
         return Git.TagInfo(name = name, commitHash = commitHash)
 
-    @staticmethod
-    def doesTagExist(tagName: str) -> bool:
+    def doesTagExist(self, tagName: str) -> bool:
         """Checks if a tag exists
 
+        :param self:
+            Self
         :param tagName:
             The name of the tag to look for
 
@@ -306,48 +376,22 @@ class Git:
         """
 
         # Try to list the tag
-        try:
-            tagList = subprocess.check_output([
-                "git", "tag", "-l", "{}".format(tagName)
-            ])
+        tagList = self._runCommand(["tag", "-l", "{}".format(tagName)])
 
-        except subprocess.CalledProcessError:
+        if tagList is None:
             return False
 
         # If the tag wasn't listed, it doesn't exist
-        if tagName not in tagList.decode().strip():
+        if tagName not in tagList:
             return False
 
         return True
 
-    @staticmethod
-    def checkoutTag(tagName: str) -> bool:
-        """Checks out a Git tag
+    def deleteTag(self, tagName: str) -> bool:
+        """Deletes a Git tag
 
-        :param tagName:
-            The name of the tag to checkout
-
-        :return True:
-            Tag checked out
-        :return False:
-            Failed to check out tag
-        """
-
-        # Create a new annotated Git tag with our default subject
-        try:
-            subprocess.check_output([
-                "git", "checkout", "{}".format(tagName)
-            ])
-
-        except subprocess.CalledProcessError:
-            return False
-
-        return True
-
-    @staticmethod
-    def deleteTag(tagName: str) -> bool:
-        """Deletes out a Git tag
-
+        :param self:
+            Self
         :param tagName:
             The name of the tag to delete
 
@@ -358,12 +402,9 @@ class Git:
         """
 
         # Create a new annotated Git tag with our default subject
-        try:
-            subprocess.check_output([
-                "git", "tag", "-d", "{}".format(tagName)
-            ])
+        output = self._runCommand(["tag", "-d", "{}".format(tagName)])
 
-        except subprocess.CalledProcessError:
+        if output is None:
             return False
 
         return True
