@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import os
 import subprocess
 import sys
 import typing
@@ -143,6 +144,52 @@ class West:
         return True
 
     @staticmethod
+    def getMainDirectory() -> str:
+        """Gets the main manifest directory
+
+        :param none:
+
+        :return None:
+            Failed to get directory
+        :return str:
+            The main repository directory
+        """
+
+        # Get the top-level directory
+        toplevel = West._runCommand(["topdir"])
+
+        # If that failed, that's a paddlin'
+        if toplevel is None:
+            return None
+
+        # Get the list of repositories
+        list = West._runCommand(["list"])
+
+        # If that failed, that's a paddlin'
+        if list is None:
+            return None
+
+        # Split the response into each line
+        list = list.split("\n")
+
+        manifest = None
+
+        # Find the 'manifest' line
+        #
+        # It's typically the first line, but we might as well just dynamically
+        # find it.
+        for repo in list:
+            fields = repo.split()
+
+            # If this is the line, combine its relative directory with our
+            # topdir for the full path
+            if fields[0] == "manifest":
+                return os.path.join(toplevel, fields[1])
+
+        # We must not have found it
+        return None
+
+    @staticmethod
     def build(pristine: bool, version: str = None) -> bool:
         """Performs a build
 
@@ -157,15 +204,33 @@ class West:
             Failed to finish build
         """
 
+        # Get the main repository's directory
+        buildDirectory = West.getMainDirectory()
+
+        # If that failed, that's a paddlin'
+        if buildDirectory is None:
+            return False
+
+        previousDirectory = os.getcwd()
+
+        # Build from that directory
+        os.chdir(buildDirectory)
+
         command = ["build"]
 
+        # If we are doing a pristine build, add that flag
         if pristine:
             command += ["--pristine"]
 
+        # If we are building a specific version, include that configuration flag
         if version is not None:
             command += ["--", "-DNIMBELINK_VERSION={}".format(version)]
 
+        # Build!
         result = West._runCommand(command, redirect = True)
+
+        # Go back to our previous directory
+        os.chdir(previousDirectory)
 
         if result is None:
             return False
