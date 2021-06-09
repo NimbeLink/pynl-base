@@ -11,25 +11,26 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import subprocess
+import typing
 
 class Storage:
     """Google Cloud storage bucket
     """
 
     @staticmethod
-    def _join(*args):
+    def _join(*args) -> str:
         """Joins cloud paths into a single string
 
         :param *args:
             Paths to join
 
-        :return String:
+        :return str:
             The joined paths
         """
 
         return "/".join(args)
 
-    def __init__(self, id: str):
+    def __init__(self, id: str) -> None:
         """Creates a new cloud storage
 
         :param self:
@@ -39,6 +40,9 @@ class Storage:
 
         :return none:
         """
+
+        # In case the ID has 'gs://' on the front, strip it
+        id = id.lstrip("gs://")
 
         self._id = id
 
@@ -55,15 +59,37 @@ class Storage:
 
         return self._id
 
-    def upload(self, uploadPath, filePath):
+    def _runCommand(self, command: typing.List[str]) -> bool:
+        """Runs a Google Cloud command
+
+        :param self:
+            Self
+        :param command:
+            The command and its arguments
+
+        :return None:
+            Command failed
+        :return str:
+            The successful command's output
+        """
+
+        try:
+            output = subprocess.check_output(["gsutil"] + command)
+
+        except subprocess.CalledProcessError:
+            return None
+
+        return output.decode().rstrip()
+
+    def upload(self, filePaths: str, uploadPath: str) -> bool:
         """Uploads a file to the cloud
 
         :param self:
             Self
+        :param filePaths:
+            The file(s) to upload
         :param uploadPath:
             The path to upload the file to
-        :param filePath:
-            The file to upload
 
         :return True:
             File uploaded
@@ -72,19 +98,16 @@ class Storage:
         """
 
         # Add our cloud ID to the full path
-        uploadPath = Google.Storage._join(self._id, uploadPath)
+        uploadPath = Storage._join(self._id, uploadPath)
 
-        try:
-            subprocess.check_output([
-                "gsutil", "cp", "{}".format(filePath), "gs://{}".format(uploadPath)
-            ])
+        output = self._runCommand(["cp"] + filePaths + ["gs://{}".format(uploadPath)])
 
-        except subprocess.CalledProcessError:
+        if output is None:
             return False
 
         return True
 
-    def list(self, path = None):
+    def list(self, path: str = None) -> typing.List[str]:
         """Lists files in the cloud
 
         :param self:
@@ -94,22 +117,19 @@ class Storage:
 
         :return None:
             Failed to list files
-        :return Array of Strings:
+        :return Array of str:
             Files at the path
         """
 
-        if path == None:
+        if path is None:
             path = ""
 
         # Add our cloud ID to the full path
-        path = Google.Storage._join(self.cloudId, path)
+        path = Storage._join(self._id, path)
 
-        try:
-            output = subprocess.check_output([
-                "gsutil", "ls", "gs://{}".format(path)
-            ]).decode()
+        output = self._runCommand(["ls", "gs://{}".format(path)])
 
-        except subprocess.CalledProcessError:
+        if output is None:
             return None
 
         stuff = []
