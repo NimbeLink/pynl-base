@@ -18,11 +18,19 @@ class Git:
     """Tools for using Git
     """
 
+    class RefType:
+        """The type of Git thing a reference is
+        """
+
+        Commit  = 0
+        Branch  = 1
+        Tag     = 2
+
     class TagInfo:
         """Information about a Git tag
         """
 
-        def __init__(self, name, commitHash):
+        def __init__(self, name: str, commitHash: str) -> None:
             """Creates a Git tag info
 
             :param self:
@@ -39,7 +47,7 @@ class Git:
             self.commitHash = commitHash
 
     @staticmethod
-    def getBranch(directory = None):
+    def getBranch(directory: str = None) -> str:
         """Gets the branch we're on
 
         :param directory:
@@ -68,7 +76,7 @@ class Git:
         return branch.decode().strip()
 
     @staticmethod
-    def getRepoDescription(directory = None, annotatedOnly = True):
+    def getRepoDescription(directory: str = None, annotatedOnly: bool = True) -> str:
         """Gets a repository's Git description
 
         :param directory:
@@ -102,7 +110,7 @@ class Git:
         return description.decode().strip()
 
     @staticmethod
-    def _getEditor():
+    def _getEditor() -> str:
         """Gets the best editor to use for user input
 
         :param none:
@@ -146,7 +154,7 @@ class Git:
         return None
 
     @staticmethod
-    def getCommitHash(ref = "HEAD"):
+    def getCommitHash(ref: str = "HEAD") -> str:
         """Gets the commit hash for a reference
 
         :param ref:
@@ -167,7 +175,44 @@ class Git:
             return None
 
     @staticmethod
-    def generateTag(name, commitHash = None, message = None, fileName = None, prompt = False):
+    def getRefType(ref: str) -> int:
+        """Gets a Git reference's type
+
+        :param ref:
+            The Git reference to check
+        :return None:
+            Failed to check reference type
+
+        :return int:
+            The Git reference type
+        """
+
+        try:
+            subprocess.check_call(["git", "show-ref", "--verify", "refs/tags/{}".format(ref)])
+
+            return Git.RefType.Tag
+
+        except subprocess.CalledProcessError:
+            pass
+
+        try:
+            subprocess.check_call(["git", "show-ref", "--verify", "refs/heads/{}".format(ref)])
+
+            return Git.RefType.Branch
+
+        except subprocess.CalledProcessError:
+            pass
+
+        return Git.RefType.Commit
+
+    @staticmethod
+    def generateTag(
+        name: str,
+        commitHash: str = None,
+        message: str = None,
+        fileName: str = None,
+        prompt: bool = False
+    ) -> dict:
         """Generates a new Git tag
 
         If no method for getting a message is included, this will be a 'cheap'
@@ -236,7 +281,6 @@ class Git:
             subprocess.check_output(commitCommands)
 
         except subprocess.CalledProcessError:
-            print("Failed to make new Git tag")
             return None
 
         # Get the commit hash of the commit we just tagged, and decode the
@@ -244,13 +288,12 @@ class Git:
         commitHash = Git.getCommitHash(ref = name)
 
         if commitHash == None:
-            print("Failed to get Git commit hash for tagged commit")
             return None
 
         return Git.TagInfo(name = name, commitHash = commitHash)
 
     @staticmethod
-    def doesTagExist(tagName):
+    def doesTagExist(tagName: str) -> bool:
         """Checks if a tag exists
 
         :param tagName:
@@ -269,7 +312,6 @@ class Git:
             ])
 
         except subprocess.CalledProcessError:
-            print("Failed to check for tag existing")
             return False
 
         # If the tag wasn't listed, it doesn't exist
@@ -279,7 +321,7 @@ class Git:
         return True
 
     @staticmethod
-    def checkoutTag(tagName):
+    def checkoutTag(tagName: str) -> bool:
         """Checks out a Git tag
 
         :param tagName:
@@ -298,13 +340,12 @@ class Git:
             ])
 
         except subprocess.CalledProcessError:
-            print("Failed to checkout Git tag")
             return False
 
         return True
 
     @staticmethod
-    def deleteTag(tagName):
+    def deleteTag(tagName: str) -> bool:
         """Deletes out a Git tag
 
         :param tagName:
@@ -323,7 +364,6 @@ class Git:
             ])
 
         except subprocess.CalledProcessError:
-            print("Failed to delete Git tag")
             return False
 
         return True
