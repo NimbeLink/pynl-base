@@ -11,6 +11,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 from . import cell
+from . import cloud
 from . import command
 from . import config
 from . import devkits
@@ -21,6 +22,7 @@ from . import utils
 
 __all__ = [
     "cell",
+    "cloud",
     "config",
     "devkits",
     "git",
