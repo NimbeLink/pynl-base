@@ -14,6 +14,7 @@ from . import cell
 from . import command
 from . import config
 from . import devkits
+from . import git
 from . import modules
 from . import ui
 from . import utils
@@ -22,6 +23,7 @@ __all__ = [
     "cell",
     "config",
     "devkits",
+    "git",
     "modules",
     "ui",
     "utils"

@@ -1,5 +1,5 @@
 """
-NimbeLink utilities
+Git utilities
 
 (C) NimbeLink Corp. 2021
 
@@ -10,10 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from .wsl import Wsl
-from .xmodem import Xmodem
+from .repo import Repo
 
 __all__ = [
-    "Wsl",
-    "Xmodem"
+    "Repo"
 ]

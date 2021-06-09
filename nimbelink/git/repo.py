@@ -15,7 +15,7 @@ import subprocess
 import tempfile
 import typing
 
-class GitRepo:
+class Repo:
     """A Git repository
     """
 
@@ -264,14 +264,14 @@ class GitRepo:
         output = self._runCommand(["show-ref", "--verify", "refs/tags/{}".format(ref)])
 
         if output is not None:
-            return Git.RefType.Tag
+            return Repo.RefType.Tag
 
         output = self._runCommand(["show-ref", "--verify", "refs/heads/{}".format(ref)])
 
         if output is not None:
-            return Git.RefType.Branch
+            return Repo.RefType.Branch
 
-        return Git.RefType.Commit
+        return Repo.RefType.Commit
 
     def generateTag(
         self,
@@ -322,7 +322,7 @@ class GitRepo:
                 # Launch the editor for the user to fill everything else out on
                 # their own
                 subprocess.check_call([
-                    Git._getEditor(),
+                    Repo._getEditor(),
                     commitFile.name
                 ])
 
@@ -359,7 +359,7 @@ class GitRepo:
         if commitHash is None:
             return None
 
-        return Git.TagInfo(name = name, commitHash = commitHash)
+        return Repo.TagInfo(name = name, commitHash = commitHash)
 
     def doesTagExist(self, tagName: str) -> bool:
         """Checks if a tag exists
