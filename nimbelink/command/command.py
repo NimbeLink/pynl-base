@@ -13,6 +13,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import argparse
 import importlib
 import logging
+import sys
 import textwrap
 import typing
 
@@ -238,7 +239,10 @@ class Command:
         args = parser.parse_args(args = args)
 
         # Handle the arguments
-        self._runCommand(args = args)
+        result = self._runCommand(args = args)
+
+        # Use that as our result
+        sys.exit(result)
 
     def _createParser(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """Creates a parser
