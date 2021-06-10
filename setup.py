@@ -26,6 +26,5 @@ setup(
         "pyserial>=3.4",
         "PyYAML>=5.3",
         "requests",
-        "wheel"
     ]
 )
