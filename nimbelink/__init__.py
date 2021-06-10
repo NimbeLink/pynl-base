@@ -27,6 +27,11 @@ __all__ = [
     "utils"
 ]
 
+__addons__ = [
+]
+"""Additional submodules that are dynamically loaded from the local
+environment"""
+
 def __importModules():
     """Imports our dynamic NimbeLink modules
 
@@ -46,15 +51,28 @@ def __importModules():
             importedModule = importlib.import_module(name = module.name)
 
             # That worked, so add it as a module under our namespace
+            #
+            # This allows someone to import 'nimbelink.x'.
             sys.modules["nimbelink." + module.alias] = importedModule
 
             # Make sure the module can be accessed directly without needing to
             # import it 'from' us
+            #
+            # This allows someone to access 'nimbelink.x' verbosely without
+            # needing to 'import from' or 'import as'.
+            #
+            # With the preceding operation, someone can 'import nimbelink.x',
+            # but until this operation they wouldn't be able to then use the
+            # submodule. Something like 'help(nimbelink.x)' would actually fail,
+            # despite the initial import working.
             globals()[module.alias] = importedModule
 
-            # Make sure our 'all' looks like it contains this now-look-up-able
-            # module
-            __all__.append(module.alias)
+            # The above operations make the submodule fully usable by code that
+            # knows about it, but it won't show up under the 'nimbelink' help
+            # information, despite being namespaced. So, add it to a tracker
+            # we'll use to show the available submodules we've dynamically
+            # imported.
+            __addons__.append(module.alias)
 
         except ImportError as ex:
             pass
