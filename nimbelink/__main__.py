@@ -47,7 +47,7 @@ def main():
     :return none:
     """
 
-    NlCommand()._parseAndRun()
+    NlCommand().parseAndRun()
 
 if __name__ == "__main__":
     main()
