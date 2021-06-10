@@ -305,7 +305,7 @@ class Command:
             # Add this sub-command's arguments
             subCommand._addArguments(parser = subParser)
 
-    def _runCommand(self, args: typing.List[object]) -> None:
+    def _runCommand(self, args: typing.List[object]) -> int:
         """Runs the command
 
         :param self:
@@ -313,26 +313,30 @@ class Command:
         :param args:
             Our known/expected arguments
 
-        :return none:
+        :return int:
+            Our result
         """
 
         # If we will not be compatible with WSL's limited USB functionality and
         # we're running under WSL, elevate to PowerShell
         if self._needUsb and utils.Wsl.isWsl():
-            utils.Wsl.forward()
-            return
+            return utils.Wsl.forward()
 
         try:
             # Always give the base command the chance to run
             try:
-                done = self.runCommand(args)
+                result = self.runCommand(args)
 
             except NotImplementedError:
-                done = False
+                result = None
 
-            # If that was it or we don't have any sub-commands, move on
-            if done or (len(self._subCommands) < 1):
-                return
+            # If there was a result, use it as our final one
+            if result is not None:
+                return result
+
+            # If we don't have any sub-commands, assume a successful result
+            if len(self._subCommands) < 1:
+                return 0
 
             # Get the name of the sub-command, which we made unique
             subCommandName = args.__getattribute__("{}SubCommand".format(self._name))
@@ -340,11 +344,17 @@ class Command:
             # Try to find a sub-command that'll run this
             for subCommand in self._subCommands:
                 if subCommand._name == subCommandName:
-                    subCommand._runCommand(args = args)
-                    return
+                    return subCommand._runCommand(args = args)
+
+            # We couldn't find this command somehow -- despite argparse passing
+            # along to us -- so just use something as the error
+            return 1
 
         except KeyboardInterrupt as ex:
             self.abortCommand()
+
+            # Python seems to use a result of 1 as the keyboard interrupt result
+            return 1
 
     def addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds parser arguments
@@ -359,13 +369,18 @@ class Command:
 
         raise NotImplementedError("addArguments() not implemented by {}".format(self.__class__.__name__))
 
-    def runCommand(self, args: typing.List[object]) -> typing.Union[None, bool]:
+    def runCommand(self, args: typing.List[object]) -> typing.Union[None, int]:
         """Runs the command
 
-        Typical commands do not need to return a value, but commands with
-        sub-commands might want to do some intermediate or final handling, and
-        can use the return as an indication that the command is done being
-        handled.
+        Commands that do not have sub-commands should return an integer value
+        indicating their result. If a command does not return a value -- that
+        is, returns None -- and doesn't have sub-commands, the result will be
+        assumed to be 0 (or successful). Error codes should follow the errno
+        patterns.
+
+        Commands that do have sub-commands can still return a final result in
+        the form of an integer, but if they return a value of None their
+        sub-commands will be run.
 
         :param self:
             Self
@@ -373,10 +388,11 @@ class Command:
             Our known/expected arguments
 
         :return None:
+            Command handled and successful; or command not handled
         :return False:
-            Command not done
+            Command handled and failed
         :return True:
-            Command handled
+            Command handled and successful
         """
 
         raise NotImplementedError("runCommand() not implemented by {}".format(self.__class__.__name__))
