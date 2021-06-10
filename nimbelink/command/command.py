@@ -26,7 +26,7 @@ class Command:
         """A sub-command for a base command
         """
 
-        def __init__(self, moduleName: str, className: str):
+        def __init__(self, moduleName: str, className: str) -> None:
             """Creates a new available sub-command
 
             :param self:
@@ -42,7 +42,7 @@ class Command:
             self.moduleName = moduleName
             self.className = className
 
-        def getClass(self):
+        def getClass(self) -> object:
             """Gets the sub-command's class instance
 
             :param self:
@@ -64,13 +64,13 @@ class Command:
                 return None
 
     @staticmethod
-    def _generateDescription(description: str):
+    def _generateDescription(description: str) -> str:
         """Generates a big string describing this command
 
         :param description:
             The description text
 
-        :return String:
+        :return str:
             The description string
         """
 
@@ -158,7 +158,7 @@ class Command:
         description: str = None,
         subCommands: typing.Union["Command", "Command.SubCommand"] = None,
         needUsb: bool = False
-    ):
+    ) -> None:
         """Creates a new command
 
         Sub-commands can either be instantiated Command objects or they can be
@@ -213,7 +213,7 @@ class Command:
 
         self._needUsb = needUsb
 
-    def _parseAndRun(self, args: typing.List[object] = None):
+    def _parseAndRun(self, args: typing.List[object] = None) -> None:
         """Runs a command with parameters
 
         :param self:
@@ -237,7 +237,7 @@ class Command:
         # Handle the arguments
         self._runCommand(args = args)
 
-    def _createParser(self, parser: argparse.ArgumentParser):
+    def _createParser(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """Creates a parser
 
         :param self:
@@ -262,7 +262,7 @@ class Command:
             formatter_class = argparse.RawDescriptionHelpFormatter
         )
 
-    def _addArguments(self, parser: argparse.ArgumentParser):
+    def _addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds arguments to a parser
 
         :param self:
@@ -302,7 +302,7 @@ class Command:
             # Add this sub-command's arguments
             subCommand._addArguments(parser = subParser)
 
-    def _runCommand(self, args: typing.List[object]):
+    def _runCommand(self, args: typing.List[object]) -> None:
         """Runs the command
 
         :param self:
@@ -343,7 +343,7 @@ class Command:
         except KeyboardInterrupt as ex:
             self.abortCommand()
 
-    def addArguments(self, parser: argparse.ArgumentParser):
+    def addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds parser arguments
 
         :param self:
@@ -356,7 +356,7 @@ class Command:
 
         raise NotImplementedError("addArguments() not implemented by {}".format(self.__class__.__name__))
 
-    def runCommand(self, args: typing.List[object]):
+    def runCommand(self, args: typing.List[object]) -> typing.Union[None, bool]:
         """Runs the command
 
         Typical commands do not need to return a value, but commands with
@@ -378,7 +378,7 @@ class Command:
 
         raise NotImplementedError("runCommand() not implemented by {}".format(self.__class__.__name__))
 
-    def abortCommand(self):
+    def abortCommand(self) -> None:
         """Aborts the command
 
         :param self:
