@@ -1,5 +1,5 @@
 """
-NimbeLink utilities
+Google Cloud utilities
 
 (C) NimbeLink Corp. 2021
 
@@ -10,12 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from .west import West
-from .wsl import Wsl
-from .xmodem import Xmodem
+from .storage import Storage
 
 __all__ = [
-    "West",
-    "Wsl",
-    "Xmodem"
+    "Storage"
 ]
