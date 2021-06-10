@@ -1,10 +1,9 @@
+# Python outputs
 __pycache__
 *.pyc
-*.log
-*.zip
-*.swp
-.vscode
-/.vs
+
+# Pylint Config
+.pylintrc
 
 # Virtual Environment Directories
 /ENV
@@ -12,12 +11,3 @@ __pycache__
 
 # Package Directories
 *.egg-info
-
-# Config files
-config.yaml
-
-# Firmware Blobs
-*.bin
-
-# Pylint Config
-.pylintrc
