@@ -216,7 +216,7 @@ class Command:
 
         self._logger = logging.getLogger(self.__class__.__name__)
 
-    def _parseAndRun(self, args: typing.List[object] = None) -> None:
+    def parseAndRun(self, args: typing.List[object] = None) -> None:
         """Runs a command with parameters
 
         :param self:
