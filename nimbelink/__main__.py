@@ -39,19 +39,6 @@ class NlCommand(command.Command):
             ]
         )
 
-    def addArguments(self, parser):
-        """Adds parser arguments
-
-        :param self:
-            Self
-        :param parser:
-            The parser
-
-        :return none:
-        """
-
-        pass
-
 def main():
     """Handles commands
 
@@ -60,9 +47,7 @@ def main():
     :return none:
     """
 
-    nl = NlCommand()
-
-    nl._parseAndRun()
+    NlCommand()._parseAndRun()
 
 if __name__ == "__main__":
     main()

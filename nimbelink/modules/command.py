@@ -36,19 +36,6 @@ class ListCommand(command.Command):
             help = "lists available NimbeLink Python packages"
         )
 
-    def addArguments(self, parser: argparse.ArgumentParser) -> None:
-        """Adds parser arguments
-
-        :param self:
-            Self
-        :param parser:
-            The parser
-
-        :return none:
-        """
-
-        pass
-
     def runCommand(self, args: typing.List[object]) -> None:
         """Runs the command
 
@@ -89,16 +76,3 @@ class ModuleCommand(command.Command):
                 """,
             subCommands = [ListCommand()]
         )
-
-    def addArguments(self, parser: argparse.ArgumentParser) -> None:
-        """Adds parser arguments
-
-        :param self:
-            Self
-        :param parser:
-            The parser
-
-        :return none:
-        """
-
-        pass
