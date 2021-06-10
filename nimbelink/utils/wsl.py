@@ -15,8 +15,11 @@ import subprocess
 import sys
 
 class Wsl:
+    """Provides tools for working with Windows Subsystem for Linux (WSL)
+    """
+
     @staticmethod
-    def isWsl():
+    def isWsl() -> bool:
         """Gets if the current environment is WSL
 
         :param none:
@@ -39,13 +42,13 @@ class Wsl:
         return False
 
     @staticmethod
-    def convertPath(path):
+    def convertPath(path: str) -> str:
         """Converts a WSL path to a Windows path
 
         :param path:
             The path to convert
 
-        :return String:
+        :return str:
             The converted path
         """
 
@@ -63,7 +66,15 @@ class Wsl:
             return path
 
     @staticmethod
-    def forward():
+    def forward() -> None:
+        """Forwards the current running context to a PowerShell instance
+
+        :param none:
+
+        :return int:
+            The result of the PowerShell running
+        """
+
         # We'll always elevate this to PowerShell
         command = ["PowerShell.exe"]
 
@@ -86,4 +97,4 @@ class Wsl:
         for arg in oldArgs:
             args.append(Wsl.convertPath(path = arg))
 
-        subprocess.call(command + args)
+        return subprocess.call(command + args)
