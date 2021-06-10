@@ -54,7 +54,7 @@ class ListCommand(command.Command):
                 # Try to import the module that may or may not be locally available
                 importlib.import_module(name = module.name)
 
-                print("Found module '{}'".format(module.name))
+                self._logger.info("Found module '{}'".format(module.name))
 
             except ImportError:
                 continue
