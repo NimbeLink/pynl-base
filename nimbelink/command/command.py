@@ -12,6 +12,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 import argparse
 import importlib
+import logging
 import textwrap
 import typing
 
@@ -212,6 +213,8 @@ class Command:
                 self._subCommands.append(subCommand)
 
         self._needUsb = needUsb
+
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     def _parseAndRun(self, args: typing.List[object] = None) -> None:
         """Runs a command with parameters
