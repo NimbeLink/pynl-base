@@ -11,6 +11,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import argparse
+import importlib
 import typing
 
 import nimbelink.command as command
@@ -36,7 +37,7 @@ class ListCommand(command.Command):
             help = "lists available NimbeLink Python packages"
         )
 
-    def runCommand(self, args: typing.List[object]) -> None:
+    def runCommand(self, args: typing.List[object]) -> int:
         """Runs the command
 
         :param self:
@@ -44,12 +45,15 @@ class ListCommand(command.Command):
         :param args:
             Our arguments
 
-        :return none:
+        :return 0:
+            Always
         """
 
         for module in KnownModules:
             try:
-                module.importModule()
+                # Try to import the module that may or may not be locally available
+                importlib.import_module(name = module.name)
+
                 print("Found module '{}'".format(module.name))
 
             except ImportError:
