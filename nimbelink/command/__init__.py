@@ -15,3 +15,24 @@ from .command import Command
 __all__ = [
     "Command",
 ]
+
+__commands__ = [
+]
+"""Commands that are available for running from the command-line
+
+Any modules that wish to have their modules registered for running from the
+command-line can register their instantiated nimbelink.command.Command object to
+this list. Each command's name will be registered as a sub-command under the
+top-level 'nimbelink' module's command.
+"""
+
+def register(command: Command) -> None:
+    """Registers a new sub-command
+
+    :param command:
+        The command to register
+
+    :return none:
+    """
+
+    __commands__.append(command)
