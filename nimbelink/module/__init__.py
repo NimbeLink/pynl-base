@@ -20,3 +20,7 @@ __all__ = [
 
     "ModuleCommand",
 ]
+
+import nimbelink.command as command
+
+command.register(command = ModuleCommand())
