@@ -37,13 +37,15 @@ class Host:
             self.username = username
             self.password = password
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, credentials: "Host.Credentials" = None) -> None:
         """Creates a new host
 
         :param self:
             Self
         :param name:
             The remote name of this repository
+        :param credentials:
+            The credentials to use for access
 
         :return none:
         """
@@ -51,16 +53,7 @@ class Host:
         self._name = name
         self._remote = "origin"
 
-        username = self._runCommand(["config", "--global", "user.name"])
-        password = self._runCommand(["config", "--global", "user.password"])
-
-        if (username is not None) and (password is not None):
-            self._credentials = Host.Credentials(
-                username = username,
-                password = password
-            )
-        else:
-            self._credentials = None
+        self._credentials = credentials
 
     def _runCommand(self, command: typing.List[str]) -> str:
         """Runs a Git command
@@ -113,11 +106,6 @@ class Host:
 
         :return none:
         """
-
-        if not (self._runCommand(["config", "--global", "user.name", credentials.username]) or
-                self._runCommand(["config", "--global", "user.password", credentials.password])
-        ):
-            raise RuntimeError("Failed to configure Git credentials")
 
         self._credentials = credentials
 
