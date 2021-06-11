@@ -23,6 +23,7 @@ setup(
             ["nimbelink=nimbelink.__main__:main"]
     },
     install_requires = [
+        "diskcache",
         "pyserial>=3.4",
         "PyYAML>=5.3",
         "requests",
