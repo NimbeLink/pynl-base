@@ -49,7 +49,10 @@ def __importModules():
 
     import nimbelink.module
 
-    for module in nimbelink.module.KnownModules:
+    # Make a copy of the list of modules in case we trim anything
+    modules = nimbelink.module.__modules__.copy()
+
+    for module in modules:
         try:
             # Try to import the module that may or may not be locally available
             importedModule = importlib.import_module(name = module.name)
@@ -79,6 +82,7 @@ def __importModules():
             __addons__.append(module.alias)
 
         except ImportError as ex:
-            pass
+            # This module apparently doesn't exist, so remove it
+            nimbelink.module.unregister(module)
 
 __importModules()
