@@ -16,7 +16,7 @@ from . import command
 from . import config
 from . import devkits
 from . import git
-from . import modules
+from . import module
 from . import ui
 from . import utils
 
@@ -26,7 +26,7 @@ __all__ = [
     "config",
     "devkits",
     "git",
-    "modules",
+    "module",
     "ui",
     "utils"
 ]
@@ -47,9 +47,9 @@ def __importModules():
     import importlib
     import sys
 
-    import nimbelink.modules as modules
+    import nimbelink.module
 
-    for module in modules.KnownModules:
+    for module in nimbelink.module.KnownModules:
         try:
             # Try to import the module that may or may not be locally available
             importedModule = importlib.import_module(name = module.name)

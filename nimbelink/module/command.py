@@ -16,8 +16,8 @@ import typing
 
 import nimbelink.command as command
 
-from nimbelink.modules.module import Module
-from nimbelink.modules.knownModules import KnownModules
+from .module import Module
+from .knownModules import KnownModules
 
 class ListCommand(command.Command):
     """A command for listing NimbeLink-provided packages

@@ -10,7 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from nimbelink.modules.module import Module
+from .module import Module
 
 KnownModules = [
     Module(name = "nl_testing")
