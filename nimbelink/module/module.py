@@ -14,32 +14,7 @@ class Module:
     """An installable NimbeLink Python package
     """
 
-    Prefix = "nl_"
-    """A prefix we expect all NimbeLink-provided packages to use"""
-
-    @staticmethod
-    def getAlias(name: str) -> str:
-        """Finds a package name 'alias' for an installable Python package
-        'module'
-
-        :param name:
-            The package name to find an alias for
-
-        :raise ValueError:
-            Failed to derive an alias for the package from its name
-
-        :return str:
-            The alias
-        """
-
-        # If the name doesn't start with our standard prefix, that's a paddlin'
-        if not name.startswith(Module.Prefix):
-            raise ValueError("Package name '{}' doesn't start with '{}'!".format(name, Module.Prefix))
-
-        # Strip the prefix and call the rest the 'alias'
-        return name[len(Module.Prefix):]
-
-    def __init__(self, name: str, alias: str = None) -> None:
+    def __init__(self, name: str, alias: str) -> None:
         """Creates a new module
 
         :param self:
@@ -52,9 +27,17 @@ class Module:
         :return none:
         """
 
-        # If they didn't provide an alias, try to auto-derive one
-        if alias == None:
-            alias = Module.getAlias(name = name)
-
         self.name = name
         self.alias = alias
+
+    def __str__(self) -> str:
+        """Gets a string representation of us
+
+        :param self:
+            Self
+
+        :return str:
+            Us
+        """
+
+        return "{} -> {}".format(self.name, self.alias)

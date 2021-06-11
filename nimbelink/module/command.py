@@ -15,9 +15,7 @@ import importlib
 import typing
 
 import nimbelink.command as command
-
-from .module import Module
-from .knownModules import KnownModules
+import nimbelink.module as module
 
 class ListCommand(command.Command):
     """A command for listing NimbeLink-provided packages
@@ -49,7 +47,7 @@ class ListCommand(command.Command):
             Always
         """
 
-        for module in KnownModules:
+        for module in module.__modules__:
             try:
                 # Try to import the module that may or may not be locally available
                 importlib.import_module(name = module.name)
