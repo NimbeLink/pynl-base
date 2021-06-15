@@ -11,15 +11,20 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import os
+import re
 import subprocess
 import tempfile
 import typing
 
 from .host import Host
+from . import version
 
 class Repo:
     """A Git repository
     """
+
+    ReleaseBranchPrefix = "release/"
+    """The namespace for release branches in a Git repository"""
 
     class RefType:
         """The type of Git thing a reference is
@@ -442,3 +447,72 @@ class Repo:
             return False
 
         return True
+
+    def getVersion(self, description: str = None) -> version.Version:
+        """Creates a new repository version from the current repository
+
+        :param self:
+            Self
+        :param description:
+            The description to parse
+
+        :return None:
+            Failed to get version
+        :return version.Version:
+            The repository version
+        """
+
+        # Get our current branch
+        branch = self.getBranch()
+
+        # If we don't have a branch name, just use a default
+        if branch is None:
+            branch = "none"
+
+        # If we're on a release branch
+        if branch.startswith(Repo.ReleaseBranchPrefix):
+            # Drop the 'release/'
+            tagMatch = branch.replace(Repo.ReleaseBranchPrefix, "")
+
+            # Get our Git description relative to the first release candidate
+            # tag for this release branch
+            #
+            # We'll use a glob pattern for only including tags that fit within
+            # this release branch.
+            match = re.sub(pattern = r"\.x", repl = r".[0-9]*", string = tagMatch)
+
+            # Specifically look for the first release candidate tag that matches
+            # this pattern
+            match += r"-rc1"
+
+            description = self.getDescription(annotatedOnly = False, match = match)
+
+            # If that failed, that's a paddlin'
+            if description is None:
+                return None
+
+            # Make our version from that
+            ver = version.Version.makeFromString(string = description)
+
+            # Drop the release candidate designation
+            ver.rc = None
+
+            return ver
+
+        # Else, we're on a development branch
+        else:
+            # Get our description
+            description = self.getDescription()
+
+            # If that failed, that's a paddlin'
+            if description is None:
+                return None
+
+            # Make a version from that
+            ver = version.Version.makeFromString(string = description)
+
+            # Use our branch name as the base
+            ver.base = version.Base(name = branch)
+
+            # Cool cool cool
+            return ver
