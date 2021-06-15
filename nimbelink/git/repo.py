@@ -219,13 +219,15 @@ class Repo:
 
         return self._runCommand(commands)
 
-    def getCommitHash(self, ref: str = "HEAD") -> str:
+    def getCommitHash(self, ref: str = "HEAD", short: bool = False) -> str:
         """Gets the commit hash for a reference
 
         :param self:
             Self
         :param ref:
             The reference whose commit hash to get
+        :param short:
+            Whether or not to get the 'short' version of the hash
 
         :return None:
             Failed to get commit hash
@@ -233,7 +235,14 @@ class Repo:
             The commit hash
         """
 
-        return self._runCommand(["rev-parse", "{}^{{}}".format(ref)])
+        commands = ["rev-parse"]
+
+        if short:
+            commands += ["--short"]
+
+        commands += ["{}^{{}}".format(ref)]
+
+        return self._runCommand(commands)
 
     def checkout(self, ref: str) -> bool:
         """Checks out a reference
