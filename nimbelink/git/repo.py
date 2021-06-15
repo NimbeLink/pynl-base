@@ -198,13 +198,15 @@ class Repo:
 
         return branch
 
-    def getDescription(self, annotatedOnly: bool = True) -> str:
+    def getDescription(self, annotatedOnly: bool = True, match: str = None) -> str:
         """Gets a repository's Git description
 
         :param self:
             Self
         :param annotatedOnly:
             Only include the latest annotated tag
+        :param match:
+            Tags to match against
 
         :return None:
             Git repository description not available
@@ -215,7 +217,10 @@ class Repo:
         commands = ["describe", "--always", "--long", "--dirty"]
 
         if not annotatedOnly:
-            commands.append("--tags")
+            commands += ["--tags"]
+
+        if match is not None:
+            commands += ["--match", match]
 
         return self._runCommand(commands)
 
