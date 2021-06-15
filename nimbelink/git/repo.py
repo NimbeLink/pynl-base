@@ -190,7 +190,13 @@ class Repo:
             The current branch
         """
 
-        return self._runCommand(["rev-parse", "--abbrev-ref", "HEAD"])
+        branch = self._runCommand(["rev-parse", "--abbrev-ref", "HEAD"])
+
+        # If it looks like we aren't on a branch, then say this didn't work
+        if branch == "HEAD":
+            return None
+
+        return branch
 
     def getDescription(self, annotatedOnly: bool = True) -> str:
         """Gets a repository's Git description
