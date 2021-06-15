@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+from . import app
 from . import cell
 from . import cloud
 from . import command
@@ -21,6 +22,7 @@ from . import ui
 from . import utils
 
 __all__ = [
+    "app",
     "cell",
     "cloud",
     "config",
