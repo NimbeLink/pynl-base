@@ -82,7 +82,13 @@ def __importModules():
             __addons__.append(module.alias)
 
         except ImportError as ex:
-            # This module apparently doesn't exist, so remove it
-            nimbelink.module.unregister(module)
+            # If the import error is this module, it apparently doesn't exist,
+            # so remove it
+            if ex.name == module.name:
+                nimbelink.module.unregister(module)
+
+            # Else, bubble up the import error as if it occurred normally
+            else:
+                raise ex
 
 __importModules()
