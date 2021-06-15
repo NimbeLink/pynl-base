@@ -47,14 +47,16 @@ class ListCommand(command.Command):
             Always
         """
 
-        for module in module.__modules__:
+        self._logger.info("Available Modules:")
+
+        for submodule in module.__modules__:
             try:
                 # Try to import the module that may or may not be locally available
-                importlib.import_module(name = module.name)
+                importlib.import_module(name = submodule.name)
 
-                self._logger.info("Found module '{}'".format(module.name))
+                self._logger.info("    '{}'".format(submodule.name))
 
-            except ImportError:
+            except ImportError as ex:
                 continue
 
 class ModuleCommand(command.Command):
