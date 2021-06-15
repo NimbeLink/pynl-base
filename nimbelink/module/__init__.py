@@ -10,16 +10,14 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from .__cmd__ import ModuleCommand
 from .module import Module
 
 __all__ = [
     "Module",
-
-    "ModuleCommand",
 ]
 
 import nimbelink.command as command
+from .__cmd__ import ModuleCommand
 
 command.register(command = ModuleCommand())
 
