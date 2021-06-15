@@ -24,6 +24,9 @@ class Command:
     root 'skywire' command
     """
 
+    LoggerNamespace = "_commands"
+    """The root namespace for command loggers"""
+
     class SubCommand:
         """A sub-command for a base command
         """
@@ -215,7 +218,7 @@ class Command:
 
         self._needUsb = needUsb
 
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
 
     def parseAndRun(self, args: typing.List[object] = None) -> None:
         """Runs a command with parameters
