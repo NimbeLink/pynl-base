@@ -80,6 +80,10 @@ def register(module: Module) -> None:
     :return none:
     """
 
+    # If this module is already registered, nothing to do
+    if module in __modules__:
+        return
+
     # Append this to our 'live' modules
     __modules__.append(module)
 
