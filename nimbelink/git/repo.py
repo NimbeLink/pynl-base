@@ -214,7 +214,7 @@ class Repo:
             The Git repository description
         """
 
-        commands = ["describe", "--always", "--long", "--dirty"]
+        commands = ["describe", "--always", "--all", "--long", "--dirty"]
 
         if not annotatedOnly:
             commands += ["--tags"]
@@ -222,7 +222,17 @@ class Repo:
         if match is not None:
             commands += ["--match", match]
 
-        return self._runCommand(commands)
+        description = self._runCommand(commands)
+
+        # Make sure the descriptions doesn't have the 'heads/' or 'tags/'
+        # prefixes, which comes from our '--all' flag
+        if description.startswith("heads/"):
+            description = description[len("heads/"):]
+
+        if description.startswith("tags/"):
+            description = description[len("tags/"):]
+
+        return description
 
     def getCommitHash(self, ref: str = "HEAD", short: bool = False) -> str:
         """Gets the commit hash for a reference
