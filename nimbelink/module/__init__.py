@@ -107,4 +107,6 @@ def unregister(module: Module) -> None:
             # Cache our new list of modules
             __getCache().set(key = "modules", value = __modules__)
 
+            break
+
 __loadModules()
