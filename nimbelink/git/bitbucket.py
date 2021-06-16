@@ -40,7 +40,7 @@ class BitBucket(Host):
             self,
             key: str,
             state: str,
-            url: str,
+            url: str = None,
             name: str = None,
             description: str = None
         ) -> None:
@@ -62,6 +62,10 @@ class BitBucket(Host):
             :return none:
             """
 
+            # A URL is required by BitBucket
+            if url is None:
+                url = "none.com"
+
             self.key = key
             self.state = state
             self.url = url
@@ -72,106 +76,91 @@ class BitBucket(Host):
         """A context for managing a build's status
         """
 
-        def __init__(self, name: str, host: "BitBucket", commit: str) -> None:
+        def __init__(self, host: "BitBucket", commit: str, buildId: str) -> None:
             """Creates a new build context
 
             :param self:
                 Self
-            :param name:
-                The name of the build
             :param host:
                 The Git repository's host to update
             :param commit:
                 The commit whose build status to manage
+            :param buildId:
+                The ID of the build
 
             :return none:
             """
 
-            self._name = name
             self._host = host
             self._commit = commit
+            self._buildId = buildId
 
-            self._status = None
+            self._steps = {}
 
-        @property
-        def status(self) -> bool:
-            """Gets our build status
-
-            :param self:
-                Self
-
-            :return bool:
-                Our build status
-            """
-
-            return self._status
-
-        @status.setter
-        def status(self, status: bool) -> None:
+        def setState(self, name: str, state: "BitBucket.BuildStatus.State") -> None:
             """Sets our build status
 
             :param self:
                 Self
-            :param status:
-                The new status to set
+            :param name:
+                The name of the build step
+            :param state:
+                The new state to set
 
             :return none:
             """
 
-            self._status = status
-
-        def start(self) -> bool:
-            """Starts the build context
-
-            :param self:
-                Self
-
-            :return True:
-                Build context started
-            :return False:
-                Failed to start build context
-            """
-
-            if self._commit is None:
-                return False
-
-            return self._host.setBuildStatus(
+            updated = self._host.setBuildStatus(
                 commit = self._commit,
                 status = BitBucket.BuildStatus(
-                    key = self._name,
-                    state = BitBucket.BuildStatus.State.InProgress,
-                    url = "none.com"
-                )
-            )
-
-        def stop(self) -> bool:
-            """Stops the build context
-
-            :param self:
-                Self
-
-            :return True:
-                Build context stopped
-            :return False:
-                Failed to stop build context
-            """
-
-            if self._commit is None:
-                return False
-
-            if self._status:
-                state = BitBucket.BuildStatus.State.Successful
-            else:
-                state = BitBucket.BuildStatus.State.Failed
-
-            return self._host.setBuildStatus(
-                commit = self._commit,
-                status = BitBucket.BuildStatus(
-                    key = self._name,
+                    key = name,
                     state = state,
-                    url = ""
+                    description = self._buildId
                 )
             )
+
+            # If the build was updated, note the state we updated to
+            if updated:
+                self._steps[name] = state
+
+        def setInProgress(self, name: str) -> None:
+            """Sets a build status to 'in progress'
+
+            :param self:
+                Self
+            :param name:
+                The name of the build step
+
+            :return none:
+            """
+
+            return self.setState(name = name, state = BitBucket.BuildStatus.State.InProgress)
+
+        def setSuccess(self, name: str) -> None:
+            """Sets a build status to 'successful'
+
+            :param self:
+                Self
+            :param name:
+                The name of the build step
+
+            :return none:
+            """
+
+            return self.setState(name = name, state = BitBucket.BuildStatus.State.Successful)
+
+        def setFailed(self, name: str) -> None:
+            """Sets a build status to 'failed'
+
+            :param self:
+                Self
+            :param name:
+                The name of the build step
+
+            :return none:
+            """
+
+            return self.setState(name = name, state = BitBucket.BuildStatus.State.Failed)
 
         def __enter__(self) -> "BitBucket.BuildContext":
             """Enters the build context
@@ -182,8 +171,6 @@ class BitBucket(Host):
             :return BuildContext:
                 Us
             """
-
-            self.start()
 
             return self
 
@@ -202,7 +189,19 @@ class BitBucket(Host):
             :return none:
             """
 
-            self.stop()
+            for name, state in self._steps.items():
+                # If this step was resolved, nothing to do for it
+                if ((state == BitBucket.BuildStatus.State.Successful) or
+                    (state == BitBucket.BuildStatus.State.Failed)
+                ):
+                    continue
+
+                # We must have ended prematurely, so update the status with a
+                # failure
+                #
+                # We'll technically be updating the dictionary element we're
+                # currently examining, but that's fine.
+                self.setFailed(name = name)
 
     @property
     def url(self) -> str:
@@ -265,3 +264,19 @@ class BitBucket(Host):
         response = requests.post(apiUrl, auth = auth, json = data)
 
         return response.ok
+
+    def getBuildContext(self, commit: str, buildId: str) -> "BitBucket.BuildContext":
+        """Gets a new build context for a commit
+
+        :param self:
+            Self
+        :param commit:
+            The commit to get a context for
+        :param buildId:
+            The build ID for the commit
+
+        :return BitBucket.BuildContext:
+            The build context
+        """
+
+        return BitBucket.BuildContext(host = self, commit = commit, buildId = buildId)
