@@ -36,16 +36,16 @@ class NlCommand(command.Command):
             subCommands = command.__commands__
         )
 
-        # Get a logger for all of our commands
-        root = logging.getLogger(command.Command.LoggerNamespace)
+        # Get a logger for everything
+        root = logging.getLogger()
 
-        # Commands get 'info'-level logging
+        # Everything gets 'info'-level logging
         root.setLevel(logging.INFO)
 
         # Make a handler for logging to standard output
         handler = logging.StreamHandler()
 
-        # Add the handler to our command loggers
+        # Add the handler to our root loggers
         root.addHandler(handler)
 
 def main():
