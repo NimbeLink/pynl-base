@@ -190,7 +190,7 @@ class West:
         return None
 
     @staticmethod
-    def build(pristine: bool, version: str = None) -> bool:
+    def build(pristine: bool = False, definitions: dict = None) -> bool:
         """Performs a build
 
         :param pristine:
@@ -222,9 +222,12 @@ class West:
         if pristine:
             command += ["--pristine"]
 
-        # If we are building a specific version, include that configuration flag
-        if version is not None:
-            command += ["--", "-DNIMBELINK_VERSION={}".format(version)]
+        # If there are additional definitions specified, include them
+        if (definitions is not None) and (len(definitions) > 0):
+            command += ["--"]
+
+            for definition, value in definitions.items():
+                command += [f"-D{definition}={value}"]
 
         # Build!
         result = West._runCommand(command, redirect = True)
