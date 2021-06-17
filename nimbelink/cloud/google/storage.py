@@ -104,7 +104,7 @@ class Storage:
         # Add our cloud ID to the full path
         uploadPath = Storage._join(self._id, uploadPath)
 
-        output = self._runCommand(["cp"] + filePaths + ["gs://{}".format(uploadPath)])
+        output = self._runCommand(["cp"] + filePaths + [f"gs://{uploadPath}"])
 
         if output is None:
             return False
@@ -131,7 +131,7 @@ class Storage:
         # Add our cloud ID to the full path
         path = Storage._join(self._id, path)
 
-        output = self._runCommand(["ls", "gs://{}".format(path)])
+        output = self._runCommand(["ls", f"gs://{path}"])
 
         if output is None:
             return None

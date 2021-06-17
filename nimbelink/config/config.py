@@ -74,7 +74,7 @@ class Option():
         if value.lower() in ["no", "n", "false", "f", "0"]:
             return False
 
-        raise TypeError("Failed to convert '{}' to a boolean".format(value))
+        raise TypeError(f"Failed to convert '{value}' to a boolean")
 
     def __init__(
         self,
@@ -175,7 +175,7 @@ class Option():
 
         if self._choices != None:
             if newValue not in self._choices:
-                raise TypeError("Invalid value {} for choices {}".format(newValue, self._choices))
+                raise TypeError(f"Invalid value {newValue} for choices {self._choices}")
 
         if isinstance(newValue, self._type):
             self._value = newValue
@@ -185,7 +185,7 @@ class Option():
             self._value = self._type(newValue)
 
         except ValueError:
-            raise TypeError("Invalid type {} for option '{}' of type {}".format(type(newValue), self._name, self._type))
+            raise TypeError(f"Invalid type {type(newValue)} for option '{self._name}' of type {self._type}")
 
     def __str__(self):
         """Get a string representation of the option
@@ -197,10 +197,10 @@ class Option():
             Us as a string
         """
 
-        string = "{}:".format(self._name)
+        string = f"{self._name}:"
 
         if self._value != None:
-            string += " {}".format(self._value)
+            string += f" {self._value}"
 
         return string
 
@@ -274,7 +274,7 @@ class Config():
 
             bad = self[name]
 
-            raise ValueError("{} '{}' already exists".format(type(thing), thing.name))
+            raise ValueError(f"{type(thing)} '{thing.name}' already exists")
 
         except (KeyError, AttributeError) as ex:
             pass
@@ -286,7 +286,7 @@ class Config():
             self._subConfigs.append(thing)
 
         else:
-            raise ValueError("Can't add {} to config".format(type(thing)))
+            raise ValueError(f"Can't add {type(thing)} to config")
 
         return thing
 
@@ -313,7 +313,7 @@ class Config():
             if subConfig.name == name:
                 return subConfig
 
-        raise KeyError("Unable to find \"{}\" in Config".format(name))
+        raise KeyError(f"Unable to find \"{name}\" in Config")
 
     def __setitem__(self, name: str, newValue):
         """Set an Option
@@ -336,7 +336,7 @@ class Config():
                 option.value = newValue
                 return
 
-        raise KeyError("Unable to find \"{}\" in Config".format(name))
+        raise KeyError(f"Unable to find \"{name}\" in Config")
 
     def __delitem__(self, name: str):
         """Deletes an Option or Config
@@ -362,7 +362,7 @@ class Config():
                 del self._subConfigs[i]
                 return
 
-        raise KeyError("Unable to find \"{}\" in Config".format(name))
+        raise KeyError(f"Unable to find \"{name}\" in Config")
 
     def __contains__(self, item):
         """Checks if the configuration contains an item
@@ -400,16 +400,16 @@ class Config():
             Us as a string
         """
 
-        string = "config {}:".format(self.name)
+        string = f"config {self.name}:"
 
         for option in self._options:
-            string += "\n    option {}".format(option)
+            string += f"\n    option {option}"
 
         for subConfig in self._subConfigs:
-            subConfigString = "{}".format(subConfig)
+            subConfigString = f"{subConfig}"
 
             for line in subConfigString.split("\n"):
-                string += "\n    {}".format(line)
+                string += f"\n    {line}"
 
         return string
 
@@ -476,16 +476,16 @@ class Config():
 
         # If the file doesn't exist, use an empty configuration
         except FileNotFoundError:
-            raise OSError("Failed to load file {}".format(filename))
+            raise OSError(f"Failed to load file {filename}")
 
         # If there wasn't any data, use an empty configuration
         if data == None:
-            raise OSError("No data found in file {}".format(filename))
+            raise OSError(f"No data found in file {filename}")
 
         # If the data doesn't start with our famous 'root' entry, use an empty
         # configuration
         if "root" not in data:
-            raise OSError("No 'root' configuration found in file {}".format(filename))
+            raise OSError(f"No 'root' configuration found in file {filename}")
 
         return data
 
@@ -534,19 +534,19 @@ class Config():
         for key in data:
             # If this isn't found in our items, that's a paddlin'
             if key not in config:
-                raise OSError("Item {} not found in config".format(key))
+                raise OSError(f"Item {key} not found in config")
 
             # If the item is a configuration but our item isn't; or vice versa,
             # that's a paddlin'
             if isinstance(data[key], dict):
                 if not isinstance(config[key], Config):
-                    raise OSError("Item {} is a Config but should be an Option".format(key))
+                    raise OSError(f"Item {key} is a Config but should be an Option")
 
                 Config._loadFromDict(config = config[key], data = data[key])
 
             else:
                 if not isinstance(config[key], Option):
-                    raise OSError("Item {} is an Option but should be a Config".format(key))
+                    raise OSError(f"Item {key} is an Option but should be a Config")
 
                 config[key] = data[key]
 

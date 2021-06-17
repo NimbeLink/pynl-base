@@ -149,7 +149,7 @@ class Skywire(object):
             Our host
         """
 
-        raise NotImplementedError("host() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"host() not implemented by {self.__class__.__name__}")
 
     @host.setter
     def host(self, newHost: Host):
@@ -220,7 +220,7 @@ class Skywire(object):
 
         # Setting the network mode can take a bit of time, so give it 10 seconds
         # to finish
-        response = self.at.sendCommand("AT+CFUN={}".format(networkMode), timeout = 10)
+        response = self.at.sendCommand(f"AT+CFUN={networkMode}", timeout = 10)
 
         if not response:
             raise modem.AtError(response, "Failed to set network mode")
@@ -235,7 +235,7 @@ class Skywire(object):
         :rtype: None
         """
 
-        raise NotImplementedError("reboot() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"reboot() not implemented by {self.__class__.__name__}")
 
     def shutdown(self) -> None:
         """Gracefully shut down the modem
@@ -247,7 +247,7 @@ class Skywire(object):
         :rtype: None
         """
 
-        raise NotImplementedError("shutdown() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"shutdown() not implemented by {self.__class__.__name__}")
 
     def reset(self) -> None:
         """Hard reset the modem

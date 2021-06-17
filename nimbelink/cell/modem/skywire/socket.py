@@ -62,7 +62,7 @@ class Socket(object):
             :return none:
             """
 
-            raise NotImplementedError("create() not implemented by {}".format(self.__class__.__name__))
+            raise NotImplementedError(f"create() not implemented by {self.__class__.__name__}")
 
         def close(self) -> None:
             """Closes the socket
@@ -73,7 +73,7 @@ class Socket(object):
             :return none:
             """
 
-            raise NotImplementedError("close() not implemented by {}".format(self.__class__.__name__))
+            raise NotImplementedError(f"close() not implemented by {self.__class__.__name__}")
 
         def connect(self, address: typing.Tuple[str, int]) -> None:
             """Connects to an address
@@ -89,7 +89,7 @@ class Socket(object):
             :return none:
             """
 
-            raise NotImplementedError("connect() not implemented by {}".format(self.__class__.__name__))
+            raise NotImplementedError(f"connect() not implemented by {self.__class__.__name__}")
 
         def send(self, bytes: bytearray) -> int:
             """Sends data to the socket
@@ -103,7 +103,7 @@ class Socket(object):
                 The number of bytes sent
             """
 
-            raise NotImplementedError("send() not implemented by {}".format(self.__class__.__name__))
+            raise NotImplementedError(f"send() not implemented by {self.__class__.__name__}")
 
         def recv(self, bufsize: int) -> bytearray:
             """Receives data from the socket
@@ -117,7 +117,7 @@ class Socket(object):
                 The received data
             """
 
-            raise NotImplementedError("recv() not implemented by {}".format(self.__class__.__name__))
+            raise NotImplementedError(f"recv() not implemented by {self.__class__.__name__}")
 
     def __call__(self, *args, **kwargs) -> "Socket.Instance":
         """Creates a new socket
@@ -138,4 +138,4 @@ class Socket(object):
             The socket
         """
 
-        raise NotImplementedError("__call__() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"__call__() not implemented by {self.__class__.__name__}")

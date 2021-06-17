@@ -260,7 +260,7 @@ class Repo:
         if short:
             commands += ["--short"]
 
-        commands += ["{}^{{}}".format(ref)]
+        commands += [f"{ref}^{{}}"]
 
         return self._runCommand(commands)
 
@@ -279,7 +279,7 @@ class Repo:
         """
 
         # Create a new annotated Git tag with our default subject
-        output = self._runCommand(["checkout", "{}".format(ref)])
+        output = self._runCommand(["checkout", f"{ref}"])
 
         if output is None:
             return False
@@ -300,12 +300,12 @@ class Repo:
             The Git reference type
         """
 
-        output = self._runCommand(["show-ref", "--verify", "refs/tags/{}".format(ref)])
+        output = self._runCommand(["show-ref", "--verify", f"refs/tags/{ref}"])
 
         if output is not None:
             return Repo.RefType.Tag
 
-        output = self._runCommand(["show-ref", "--verify", "refs/heads/{}".format(ref)])
+        output = self._runCommand(["show-ref", "--verify", f"refs/heads/{ref}"])
 
         if output is not None:
             return Repo.RefType.Branch
@@ -375,7 +375,7 @@ class Repo:
 
         # If we have a specific commit to target, do so
         if commitHash is not None:
-            commitCommands += ["{}".format(commitHash)]
+            commitCommands += [f"{commitHash}"]
 
         # If we have a message, make this an annotated tag
         #
@@ -383,7 +383,7 @@ class Repo:
         # up whitespace. Otherwise Git will remove those, since it'll think
         # they're supposed to be comments.
         if message is not None:
-            commitCommands += ["-a", "--cleanup=whitespace", "-m", "{}".format(message)]
+            commitCommands += ["-a", "--cleanup=whitespace", "-m", f"{message}"]
 
         # Generate the tag
         output = self._runCommand(commitCommands)
@@ -415,7 +415,7 @@ class Repo:
         """
 
         # Try to list the tag
-        tagList = self._runCommand(["tag", "-l", "{}".format(tagName)])
+        tagList = self._runCommand(["tag", "-l", f"{tagName}"])
 
         if tagList is None:
             return False
@@ -441,7 +441,7 @@ class Repo:
         """
 
         # Create a new annotated Git tag with our default subject
-        output = self._runCommand(["tag", "-d", "{}".format(tagName)])
+        output = self._runCommand(["tag", "-d", f"{tagName}"])
 
         if output is None:
             return False

@@ -340,7 +340,7 @@ class Xmodem:
             packetSize = 1024
         # Verify that the packet size is valid
         if packetSize not in Xmodem.Packet.TransferSizes:
-            raise ValueError("Can't use packet size of {}!".format(packetSize))
+            raise ValueError(f"Can't use packet size of {packetSize}!")
 
         # Result of transfer is failure until proven otherwise
         success = False

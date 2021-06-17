@@ -268,7 +268,7 @@ class Interface(object):
             # We consumed a whole line, so start over
             self._buffer = bytearray()
 
-            self._logger.debug("Read  {}".format(ascii(buffer.decode())))
+            self._logger.debug(f"Read  {ascii(buffer.decode())}")
 
             # Got another line
             yield buffer.decode()
@@ -288,9 +288,9 @@ class Interface(object):
         """
 
         if self._device.write(data) != len(data):
-            raise Interface.CommError("Failed to send {}".format(ascii(data.decode())))
+            raise Interface.CommError(f"Failed to send {ascii(data.decode())}")
 
-        self._logger.debug("Wrote {}".format(ascii(data.decode())))
+        self._logger.debug(f"Wrote {ascii(data.decode())}")
 
     def _beginCommand(self, command):
         """Sends a command to the AT interface without expecting a response
@@ -419,7 +419,7 @@ class Interface(object):
             return line.rstrip()
 
         # We didn't get the URC in time
-        raise Interface.CommError("Failed to receive URC matching '{}'".format(pattern))
+        raise Interface.CommError(f"Failed to receive URC matching '{pattern}'")
 
     def getUrcs(self, pattern = None, timeout = None):
         """Waits for multiple asynchronous output

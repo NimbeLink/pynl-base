@@ -101,10 +101,10 @@ class Result(object):
                 return "ERROR"
 
             if self.variant == Result.Error.Cme:
-                return "CME ERROR: {}".format(CmeError.getName(self.code))
+                return f"CME ERROR: {CmeError.getName(self.code)}"
 
             if self.variant == Result.Error.Cms:
-                return "CMS ERROR: {}".format(CmsError.getName(self.code))
+                return f"CMS ERROR: {CmsError.getName(self.code)}"
 
             return "UNKNOWN ERROR"
 
@@ -302,7 +302,7 @@ class Result(object):
         if self.error == None:
             return "OK"
 
-        return "{}".format(self.error)
+        return f"{self.error}"
 
     @staticmethod
     def makeFromString(string):

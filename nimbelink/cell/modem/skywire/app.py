@@ -46,7 +46,7 @@ class App:
                 Us
             """
 
-            return "{}: {}".format(self.name, self.value)
+            return f"{self.name}: {self.value}"
 
         def __eq__(self, other):
             """Compares to another version
@@ -97,4 +97,4 @@ class App:
             Our application version(s)
         """
 
-        raise NotImplementedError("@versions not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"@versions not implemented by {self.__class__.__name__}")

@@ -165,13 +165,13 @@ class Gpio:
             pins = [pin for pin in self._pins if pin.name == key]
 
         else:
-            raise TypeError("Invalid type {} for pin mapping access".format(type(key)))
+            raise TypeError(f"Invalid type {type(key)} for pin mapping access")
 
         if len(pins) < 1:
-            raise KeyError("Failed to find {} in pin maps".format(key))
+            raise KeyError(f"Failed to find {key} in pin maps")
 
         if len(pins) > 1:
-            raise KeyError("{} is ambiguous in pin maps".format(key))
+            raise KeyError(f"{key} is ambiguous in pin maps")
 
         return pins[0]
 
@@ -188,7 +188,7 @@ class Gpio:
         :return none:
         """
 
-        raise NotImplementedError("setConfigs() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"setConfigs() not implemented by {self.__class__.__name__}")
 
     def getConfigs(self, pins: typing.List[int]) -> typing.List["Gpio.Config"]:
         """Gets GPIO configurations
@@ -202,7 +202,7 @@ class Gpio:
             The GPIO configurations
         """
 
-        raise NotImplementedError("getConfigs() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"getConfigs() not implemented by {self.__class__.__name__}")
 
     def write(self, pins: typing.List[int], states: typing.List[int]) -> None:
         """Writes GPIO outputs
@@ -217,7 +217,7 @@ class Gpio:
         :return none:
         """
 
-        raise NotImplementedError("write() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"write() not implemented by {self.__class__.__name__}")
 
     def read(self, pins: typing.List[int]) -> typing.List[int]:
         """Reads GPIO states
@@ -231,4 +231,4 @@ class Gpio:
             The pin states
         """
 
-        raise NotImplementedError("read() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"read() not implemented by {self.__class__.__name__}")

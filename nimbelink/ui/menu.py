@@ -49,10 +49,10 @@ class Menu:
         """
 
         while True:
-            sys.stdout.write("{}:\n".format(self._prompt))
+            sys.stdout.write(f"{self._prompt}:\n")
 
             for i in range(len(self._items)):
-                sys.stdout.write("{:4d}: {}".format(i + 1, self._items[i]))
+                sys.stdout.write(f"{i + 1:4d}: {self._items[i]}")
 
                 if self._items[i] == self._currentValue:
                     sys.stdout.write(" (current)")
@@ -78,11 +78,11 @@ class Menu:
                 selection = int(input)
 
             except ValueError:
-                sys.stdout.write("Please enter a valid number ({})\n".format(input))
+                sys.stdout.write(f"Please enter a valid number ({input})\n")
                 continue
 
             if selection > len(self._items):
-                sys.stdout.write("Invalid selection {}\n".format(selection))
+                sys.stdout.write(f"Invalid selection {selection}\n")
                 continue
 
             break

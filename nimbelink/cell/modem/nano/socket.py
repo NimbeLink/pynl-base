@@ -141,7 +141,7 @@ class Socket(skywire.Socket):
             if fileno != None:
                 # If the socket ID doesn't exist, that's a paddlin'
                 if fileno not in existingSocketIds:
-                    raise OSError("fileno {} doesn't exist".format(fileno))
+                    raise OSError(f"fileno {fileno} doesn't exist")
 
                 # Found it, so let's be it too
                 self.socketId = fileno
@@ -159,7 +159,7 @@ class Socket(skywire.Socket):
 
             # Try to make the socket
             response = self.nano.at.sendCommand(
-                "AT#XSOCKET={},1,{}".format(socketId, type),
+                f"AT#XSOCKET={socketId},1,{type}",
                 timeout = 30
             )
 
@@ -203,7 +203,7 @@ class Socket(skywire.Socket):
             """
 
             if self.socketId != None:
-                self.nano.at.sendCommand("AT#XSOCKET={},0".format(self.socketId))
+                self.nano.at.sendCommand(f"AT#XSOCKET={self.socketId},0")
 
                 self.socketId = None
 
@@ -224,11 +224,7 @@ class Socket(skywire.Socket):
             """
 
             response = self.nano.at.sendCommand(
-                "AT#XTCPCONN={},\"{}\",{}".format(
-                    self.socketId,
-                    address[0],
-                    address[1]
-                ),
+                f"AT#XTCPCONN={self.socketId},\"{address[0]}\",{address[1]}",
                 timeout = 30
             )
 
@@ -273,10 +269,7 @@ class Socket(skywire.Socket):
             # prompt-based sender with a static length
             with self.nano.at.startPrompt(dynamic = False) as prompt:
                 # Start the prompt
-                prompt.startCommand("AT#XTCPSEND={},{}\r".format(
-                    self.socketId,
-                    len(bytes)
-                ))
+                prompt.startCommand(f"AT#XTCPSEND={self.socketId},{len(bytes)}\r")
 
                 # Write the data
                 prompt.writeData(data = bytes)
@@ -313,11 +306,7 @@ class Socket(skywire.Socket):
             """
 
             response = self.nano.at.sendCommand(
-                "AT#XTCPRECV={},{},{}".format(
-                    self.socketId,
-                    bufsize,
-                    self.recvTimeout
-                ),
+                f"AT#XTCPRECV={self.socketId},{bufsize},{self.recvTimeout}",
                 timeout = self.recvTimeout + 5
             )
 

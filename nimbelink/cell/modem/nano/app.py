@@ -165,7 +165,7 @@ class App(skywire.App):
             # Note that the path from urllib will contain any forward slash
             # between it and the network location, which we'll want to omit from
             # our AT command.
-            command = "AT#XFOTA=\"{}\",\"{}\"".format(result.netloc, result.path[1:])
+            command = f"AT#XFOTA=\"{result.netloc}\",\"{result.path[1:]}\""
 
             # If we're not rebooting, prevent it
             if not reboot:
@@ -210,7 +210,7 @@ class App(skywire.App):
 
             # Else, if this is a failure, that's a paddlin'
             elif dfu.type == Urcs.Dfu.Type.Failure:
-                raise OSError("DFU failed ({})".format(urc))
+                raise OSError(f"DFU failed ({urc})")
 
         # Wait for the device to boot again
         #
@@ -237,7 +237,7 @@ class App(skywire.App):
 
             # Else, if this is a failure, that's a paddlin'
             elif dfu.type == Urcs.Dfu.Type.Failure:
-                raise OSError("DFU failed ({})".format(urc))
+                raise OSError(f"DFU failed ({urc})")
 
             # Else, this is an unexpected DFU URC, so that's a paddlin'
             else:

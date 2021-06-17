@@ -106,7 +106,7 @@ class Response(object):
         if len(self.output) > 0:
             string += self.output + self._newLine
 
-        string += "{}".format(self.result)
+        string += f"{self.result}"
 
         return string
 

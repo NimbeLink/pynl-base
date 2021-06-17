@@ -214,7 +214,7 @@ class BitBucket(Host):
             The repository's URL
         """
 
-        return "{}/{}.git".format(BitBucket.BaseUrl, self.name)
+        return f"{BitBucket.BaseUrl}/{self.name}.git"
 
     def setBuildStatus(self, commit: str, status: "BitBucket.BuildStatus") -> bool:
         """Sets the build status for a commit
@@ -251,11 +251,7 @@ class BitBucket(Host):
             data["description"] = status.description
 
         # Make the REST API URL we'll post to
-        apiUrl = ("{}/{}/commit/{}/statuses/build".format(
-            BitBucket.RestApiUrl,
-            self.name,
-            commit
-        ))
+        apiUrl = (f"{BitBucket.RestApiUrl}/{self.name}/commit/{commit}/statuses/build")
 
         # Make our credentials
         auth = (self.credentials.username, self.credentials.password)

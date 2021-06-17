@@ -53,7 +53,7 @@ class AtError(Error):
             message = "AT command failed"
 
         if response != None:
-            message += ": {}".format(response)
+            message += f": {response}"
 
         self._response = response
         self._message = message

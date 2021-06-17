@@ -47,7 +47,7 @@ class Sim(skywire.Sim):
         :return none:
         """
 
-        response = self._nano.at.sendCommand("AT#SIMSELECT={}".format(index))
+        response = self._nano.at.sendCommand(f"AT#SIMSELECT={index}")
 
         if not response:
             raise modem.AtError(response)

@@ -49,7 +49,7 @@ class Sim:
         :return none:
         """
 
-        raise NotImplementedError("setActive() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"setActive() not implemented by {self.__class__.__name__}")
 
     @property
     def iccid(self) -> str:
@@ -62,4 +62,4 @@ class Sim:
             The current SIM's ICCID
         """
 
-        raise NotImplementedError("@iccid not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"@iccid not implemented by {self.__class__.__name__}")

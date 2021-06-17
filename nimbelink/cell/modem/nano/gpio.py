@@ -53,10 +53,10 @@ class Gpio(skywire.Gpio):
 
         # If this is just a single set, use the single GPIO setter
         if len(pins) < 2:
-            gpioMask = "{}".format(pins[0])
+            gpioMask = f"{pins[0]}"
 
             if things != None:
-                thingMask = "{}".format(things[0])
+                thingMask = f"{things[0]}"
 
         # Else, send the mask
         else:
@@ -159,7 +159,7 @@ class Gpio(skywire.Gpio):
         gpioParam, configParam = self._makeParameters(pins, configs)
 
         # Configure the GPIOs
-        response = self._nano.at.sendCommand("AT#GPIO={},2,{}".format(gpioParam, configParam))
+        response = self._nano.at.sendCommand(f"AT#GPIO={gpioParam},2,{configParam}")
 
         # If that failed, that's a paddlin'
         if not response:
@@ -206,7 +206,7 @@ class Gpio(skywire.Gpio):
         gpioParam, stateParam = self._makeParameters(pins, states)
 
         # Set the GPIO states
-        response = self._nano.at.sendCommand("AT#GPIO={},1,{}".format(gpioParam, stateParam))
+        response = self._nano.at.sendCommand(f"AT#GPIO={gpioParam},1,{stateParam}")
 
         # If that failed, that's a paddlin'
         if not response:
@@ -231,7 +231,7 @@ class Gpio(skywire.Gpio):
         gpioParam, _ = self._makeParameters(pins)
 
         # Query the GPIO states
-        response = self._nano.at.sendCommand("AT#GPIO={},0".format(gpioParam))
+        response = self._nano.at.sendCommand(f"AT#GPIO={gpioParam},0")
 
         # If that failed, that's a paddlin'
         if not response:

@@ -40,4 +40,4 @@ class Module:
             Us
         """
 
-        return "{} -> {}".format(self.name, self.alias)
+        return f"{self.name} -> {self.alias}"

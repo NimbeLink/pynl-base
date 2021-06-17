@@ -46,7 +46,7 @@ class Entry:
         """
 
         while True:
-            sys.stdout.write("{}".format(self._prompt))
+            sys.stdout.write(f"{self._prompt}")
 
             if self._currentValue != None:
                 sys.stdout.write(" (current ")
@@ -54,7 +54,7 @@ class Entry:
                 if isinstance(self._currentValue, str):
                     sys.stdout.write("'")
 
-                sys.stdout.write("{}".format(self._currentValue))
+                sys.stdout.write(f"{self._currentValue}")
 
                 if isinstance(self._currentValue, str):
                     sys.stdout.write("'")

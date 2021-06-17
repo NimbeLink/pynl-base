@@ -62,4 +62,4 @@ class Host:
         :return none:
         """
 
-        raise NotImplementedError("reset() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"reset() not implemented by {self.__class__.__name__}")

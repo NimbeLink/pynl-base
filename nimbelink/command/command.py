@@ -300,7 +300,7 @@ class Command:
         # name argument unique to us.
         parser = parser.add_subparsers(
             title = "sub-commands",
-            dest = "{}SubCommand".format(self._name),
+            dest = f"{self._name}SubCommand",
             required = True
         )
 
@@ -346,7 +346,7 @@ class Command:
                 return 0
 
             # Get the name of the sub-command, which we made unique
-            subCommandName = args.__getattribute__("{}SubCommand".format(self._name))
+            subCommandName = args.__getattribute__(f"{self._name}SubCommand")
 
             # Try to find a sub-command that'll run this
             for subCommand in self._subCommands:
@@ -374,7 +374,7 @@ class Command:
         :return none:
         """
 
-        raise NotImplementedError("addArguments() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"addArguments() not implemented by {self.__class__.__name__}")
 
     def runCommand(self, args: typing.List[object]) -> typing.Union[None, int]:
         """Runs the command
@@ -402,7 +402,7 @@ class Command:
             Command handled and successful
         """
 
-        raise NotImplementedError("runCommand() not implemented by {}".format(self.__class__.__name__))
+        raise NotImplementedError(f"runCommand() not implemented by {self.__class__.__name__}")
 
     def abortCommand(self) -> None:
         """Aborts the command
