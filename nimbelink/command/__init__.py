@@ -10,6 +10,8 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import typing
+
 from .command import Command
 
 __all__ = [
@@ -36,3 +38,19 @@ def register(command: Command) -> None:
     """
 
     __commands__.append(command)
+
+from .__cmd__ import RootCommand
+
+def run(args: typing.List[object] = None) -> int:
+    """Runs our commands with arguments
+
+    If arguments are not provided, sys.argv will be automatically used.
+
+    :param args:
+        The arguments to run with
+
+    :return int:
+        The result of the command
+    """
+
+    return RootCommand(subCommands = __commands__).parseAndRun(args = args)

@@ -220,7 +220,7 @@ class Command:
 
         self._logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
 
-    def parseAndRun(self, args: typing.List[object] = None) -> None:
+    def parseAndRun(self, args: typing.List[object] = None) -> int:
         """Runs a command with parameters
 
         :param self:
@@ -228,7 +228,8 @@ class Command:
         :param args:
             Arguments for the command
 
-        :return none:
+        :return int:
+            The result of the command
         """
 
         # Add our parameters and whatnot to a new parser
@@ -242,10 +243,7 @@ class Command:
         args = parser.parse_args(args = args)
 
         # Handle the arguments
-        result = self._runCommand(args = args)
-
-        # Use that as our result
-        sys.exit(result)
+        return self._runCommand(args = args)
 
     def _createParser(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """Creates a parser

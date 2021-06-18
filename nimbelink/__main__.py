@@ -11,42 +11,9 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import logging
+import sys
 
 import nimbelink.command as command
-
-class NlCommand(command.Command):
-    """Our root NimbeLink command
-    """
-
-    def __init__(self):
-        """Creates a new NimbeLink command
-
-        :param self:
-            Self
-
-        :return none:
-        """
-
-        super().__init__(
-            name = "nimbelink",
-            help = "provides NimbeLink Python package functionality",
-            description =
-                """Handles NimbeLink Python packages
-                """,
-            subCommands = command.__commands__
-        )
-
-        # Get a logger for everything
-        root = logging.getLogger()
-
-        # Everything gets 'info'-level logging
-        root.setLevel(logging.INFO)
-
-        # Make a handler for logging to standard output
-        handler = logging.StreamHandler()
-
-        # Add the handler to our root loggers
-        root.addHandler(handler)
 
 def main():
     """Handles commands
@@ -56,7 +23,20 @@ def main():
     :return none:
     """
 
-    NlCommand().parseAndRun()
+    # Get a logger for everything
+    root = logging.getLogger()
+
+    # Everything gets 'info'-level logging
+    root.setLevel(logging.INFO)
+
+    # Make a handler for logging to standard output
+    handler = logging.StreamHandler()
+
+    # Add the handler to our root loggers
+    root.addHandler(handler)
+
+    result = command.run()
+    sys.exit(result)
 
 if __name__ == "__main__":
     main()
