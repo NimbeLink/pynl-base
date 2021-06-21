@@ -11,12 +11,14 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 from .flash import Flash
+from .kconfig import Kconfig
 from .west import West
 from .wsl import Wsl
 from .xmodem import Xmodem
 
 __all__ = [
     "Flash",
+    "Kconfig",
     "West",
     "Wsl",
     "Xmodem"
