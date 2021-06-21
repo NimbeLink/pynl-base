@@ -15,6 +15,7 @@ from . import cell
 from . import cloud
 from . import command
 from . import config
+from . import debugger
 from . import devkits
 from . import git
 from . import module
@@ -26,6 +27,7 @@ __all__ = [
     "cell",
     "cloud",
     "config",
+    "debugger",
     "devkits",
     "git",
     "module",

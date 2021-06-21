@@ -10,11 +10,13 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+from .flash import Flash
 from .west import West
 from .wsl import Wsl
 from .xmodem import Xmodem
 
 __all__ = [
+    "Flash",
     "West",
     "Wsl",
     "Xmodem"
