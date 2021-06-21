@@ -17,6 +17,9 @@ class Storage:
     """Google Cloud storage bucket
     """
 
+    IdPrefix = "gs://"
+    """What IDs are prefixed with"""
+
     @staticmethod
     def _join(*args) -> str:
         """Joins cloud paths into a single string
@@ -42,7 +45,8 @@ class Storage:
         """
 
         # In case the ID has 'gs://' on the front, strip it
-        id = id.lstrip("gs://")
+        if id.startswith(Storage.IdPrefix):
+            id = id[len(Storage.IdPrefix):]
 
         self._id = id
 
@@ -140,6 +144,9 @@ class Storage:
                 continue
 
             # Strip off the ugly gs:// and add this to the list
-            stuff.append(thing.lstrip("gs://"))
+            if thing.startswith(Storage.IdPrefix):
+                thing = thing[len(Storage.IdPrefix):]
+
+            stuff.append(thing)
 
         return stuff
