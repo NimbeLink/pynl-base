@@ -28,7 +28,7 @@ class Sim(skywire.Sim):
         :return none:
         """
 
-        super(Sim, self).__init__(count = 2)
+        super().__init__(count = 2)
 
         self._nano = nano
 

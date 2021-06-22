@@ -30,7 +30,7 @@ class Error(Exception):
 
         self._message = message
 
-        super(Error, self).__init__(self._message)
+        super().__init__(self._message)
 
 class AtError(Error):
     """An error that occurs when an AT command fails with an error
@@ -58,4 +58,4 @@ class AtError(Error):
         self._response = response
         self._message = message
 
-        super(AtError, self).__init__(self._message)
+        super().__init__(self._message)

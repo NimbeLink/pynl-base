@@ -38,7 +38,7 @@ class NLSWN_RPI(skywire.Host):
             :return none:
             """
 
-            super(NLSWN_RPI.Gpio, self).__init__(
+            super().__init__(
                 pins = [
                     skywire.Gpio.Pin(
                         pin = 21,

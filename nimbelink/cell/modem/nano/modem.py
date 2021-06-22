@@ -40,7 +40,7 @@ class SkywireNano(skywire.Skywire):
         :return none:
         """
 
-        super(SkywireNano, self).__init__(
+        super().__init__(
             app = App(self),
             interface = interface,
             gpio = Gpio(self),

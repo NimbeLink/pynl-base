@@ -29,9 +29,7 @@ class Gpio(skywire.Gpio):
         """
 
         # Make a simple pin for each of our 32 GPIOs
-        super(Gpio, self).__init__(
-            pins = [skywire.Gpio.Pin(pin = i) for i in range(32)]
-        )
+        super().__init__(pins = [skywire.Gpio.Pin(pin = i) for i in range(32)])
 
         self._nano = nano
 
