@@ -18,6 +18,14 @@ __all__ = [
     "Command",
 ]
 
+# West commands are only available if the local system has the 'west' package
+# installed, which we don't require
+try:
+    from .westCommand import WestCommand
+    __all__.append("WestCommand")
+except ImportError:
+    pass
+
 __commands__ = [
 ]
 """Commands that are available for running from the command-line
