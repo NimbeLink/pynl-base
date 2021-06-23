@@ -14,6 +14,7 @@ from .config import Config
 from .option import Option
 
 from .backend import Backend
+from .west import WestBackend
 from .yaml import YamlBackend
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "Option",
 
     "Backend",
-    "YamlBackend"
+    "YamlBackend",
+    "WestBackend"
 ]
