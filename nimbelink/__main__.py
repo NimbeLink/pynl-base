@@ -10,7 +10,6 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-import logging
 import sys
 
 import nimbelink.command as command
@@ -23,19 +22,13 @@ def main():
     :return none:
     """
 
-    # Get a logger for everything
-    root = logging.getLogger()
+    # Set up some basic logging for commands
+    command.Command.setupLogging()
 
-    # Everything gets 'info'-level logging
-    root.setLevel(logging.INFO)
-
-    # Make a handler for logging to standard output
-    handler = logging.StreamHandler()
-
-    # Add the handler to our root loggers
-    root.addHandler(handler)
-
+    # Run the command
     result = command.run()
+
+    # Exit with the result of the command running
     sys.exit(result)
 
 if __name__ == "__main__":
