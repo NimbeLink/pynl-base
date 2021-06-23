@@ -114,7 +114,7 @@ class Option:
             The value type of the option
         """
 
-        if self._value != None:
+        if self._value is not None:
             return type(self._value)
 
         return self._type
@@ -145,6 +145,41 @@ class Option:
 
         return self._value
 
+    def _getValue(self, newValue):
+        """Gets a proper value from an incoming value
+
+        :param self:
+            Self
+        :param newValue:
+            The value to use to get a proper value from
+
+        :raise TypeError:
+            Failed to get value
+
+        :return object:
+            The value
+        """
+
+        # If we don't know our type, we will just have to use it directly
+        if self._type is None:
+            return newValue
+
+        # If it's the correct type, use it
+        if isinstance(newValue, self._type):
+            return newValue
+
+        # If this is a string, try to parse it and use that result as our value
+        if isinstance(newValue, str):
+            try:
+                return self._type(newValue)
+
+            except ValueError:
+                pass
+
+        # This isn't our type, it isn't a parsable string, or the parsing
+        # failed, so we can't use it
+        raise TypeError(f"Invalid type {type(newValue)} for option '{self._name}' of type {self._type}")
+
     @value.setter
     def value(self, newValue):
         """Set the value of an option
@@ -159,19 +194,16 @@ class Option:
         :return none:
         """
 
-        if self._choices != None:
+        # Get a proper value for this incoming thing
+        newValue = self._getValue(newValue = newValue)
+
+        # If we have a defined set of choices, make sure this is valid
+        if self._choices is not None:
             if newValue not in self._choices:
                 raise TypeError(f"Invalid value {newValue} for choices {self._choices}")
 
-        if isinstance(newValue, self._type):
-            self._value = newValue
-            return
-
-        try:
-            self._value = self._type(newValue)
-
-        except ValueError:
-            raise TypeError(f"Invalid type {type(newValue)} for option '{self._name}' of type {self._type}")
+        # Great, got our new value
+        self._value = newValue
 
     def __str__(self):
         """Get a string representation of the option
