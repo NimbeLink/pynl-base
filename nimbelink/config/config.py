@@ -343,7 +343,7 @@ class Config:
             # Else, their version of the item is an option
             else:
                 # If our version isn't an option, that's a paddlin'
-                if not isinstance(self[key], Option):
+                if isinstance(self[key], Config):
                     raise OSError(f"Item {key} is an Option but should be a Config")
 
                 # Load our option with the contents
