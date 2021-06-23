@@ -11,18 +11,8 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import typing
-import yaml
 
-try:
-    # Try to use the libyaml bindings
-    from yaml import CLoader as Loader
-    from yaml import CDumper as Dumper
-
-except ImportError:
-    # Fall back to pure python yaml library
-    from yaml import Loader
-    from yaml import Dumper
-
+from .backend import Backend
 from .option import Option
 
 class Config:
@@ -48,6 +38,8 @@ class Config:
 
         self._subConfigs = []
         self._options = []
+
+        self._backend = None
 
     @property
     def subConfigs(self):
@@ -75,36 +67,32 @@ class Config:
 
         return self._options
 
-    def add(self, thing: typing.Union[Option, "Config"]):
-        """Add an option or sub-config to this level of configuration
+    def add(self, thing: typing.Union[Option, "Config", Backend]):
+        """Add something to this configuration
 
         :param self:
             Self
         :param thing:
-            The option or sub-config to add to this level of configuration
+            The thing to add to this configuration
 
         :raise ValueError:
-            Thing cannot be added to config
+            Thing cannot be added to configuration
 
-        :return Option:
-            The added option
+        :return object:
+            The added thing
         """
 
-        try:
-            name = thing.name
-
-            bad = self[name]
-
+        if hasattr(thing, "name") and (thing.name in self):
             raise ValueError(f"{type(thing)} '{thing.name}' already exists")
-
-        except (KeyError, AttributeError) as ex:
-            pass
 
         if isinstance(thing, Option):
             self._options.append(thing)
 
         elif isinstance(thing, Config):
             self._subConfigs.append(thing)
+
+        elif isinstance(thing, Backend):
+            self._backend = thing
 
         else:
             raise ValueError(f"Can't add {type(thing)} to config")
@@ -238,6 +226,15 @@ class Config:
             Us as a string
         """
 
+        # If we have a backend and it has a formatter, use it
+        if self._backend is not None:
+            try:
+                return self._backend.format(self._getDict())
+
+            except NotImplementedError:
+                pass
+
+        # Put this together ourselves
         string = f"config {self.name}:"
 
         for option in self._options:
@@ -271,12 +268,11 @@ class Config:
         for subConfig in self._subConfigs:
             yield subConfig
 
-    @staticmethod
-    def _getConfigDict(config: "Config"):
-        """Gets a dictionary entry from a config
+    def _getDict(self):
+        """Gets a dictionary from our contents
 
-        :param config:
-            The configuration whose entry to get
+        :param self:
+            Self
 
         :return Dictionary:
             The config's entries
@@ -284,84 +280,27 @@ class Config:
 
         data = {}
 
-        for option in config.options:
+        # Add all of our options as values under a new dictionary entry
+        for option in self._options:
             data[option.name] = option.value
 
-        for subConfig in config.subConfigs:
-            data[subConfig.name] = Config._getConfigDict(config = subConfig)
+        # Recursively add our sub-configs as dictionaries under a new dictionary
+        # entry
+        for subConfig in self._subConfigs:
+            data[subConfig.name] = subConfig._getDict()
 
         return data
 
-    @staticmethod
-    def _getFileDict(filename: str):
-        """Gets a file's dictionary of data
-
-        :param filename:
-            The file to get a dictionary from
-
-        :raise OSError:
-            Failed to get dictionary from file
-
-        :return dict:
-            The dictionary of data
-        """
-
-        # Try to open the previous config file
-        try:
-            with open(filename, "r") as configFile:
-                # Read in existing configuration
-                data = yaml.load(configFile, Loader = Loader)
-
-        # If the file doesn't exist, use an empty configuration
-        except FileNotFoundError:
-            raise OSError(f"Failed to load file {filename}")
-
-        # If there wasn't any data, use an empty configuration
-        if data == None:
-            raise OSError(f"No data found in file {filename}")
-
-        # If the data doesn't start with our famous 'root' entry, use an empty
-        # configuration
-        if "root" not in data:
-            raise OSError(f"No 'root' configuration found in file {filename}")
-
-        return data
-
-    @staticmethod
-    def _makeFromDict(name: str, data: dict):
-        """Makes a configuration from a dictionary
-
-        :param name:
-            The name of the configuration
-        :param data:
-            The configuration's data
-
-        :return Config:
-            The configuration
-        """
-
-        config = Config(name = name)
-
-        for key in data:
-            # If this is a new configuration, add one for it and iterate over
-            # its options and sub-configs
-            if isinstance(data[key], dict):
-                config.add(Config._makeFromDict(name = key, data = data[key]))
-
-            # Else, this is an option, so add one for it
-            else:
-                config.add(Option(name = key, type = type(data[key]), value = data[key]))
-
-        return config
-
-    @staticmethod
-    def _loadFromDict(config: "Config", data: dict):
+    def _loadFromDict(self, data: dict, allowCreate: bool = False):
         """Loads a configuration from a dictionary
 
-        :param config:
-            The configuration to load
+        :param self:
+            Self
         :param data:
             The configuration's data
+        :param allowCreate:
+            Whether or not to allow creating configurations and options on the
+            fly
 
         :raise OSError:
             Failed to load configuration from dictionary
@@ -370,76 +309,88 @@ class Config:
         """
 
         for key in data:
-            # If this isn't found in our items, that's a paddlin'
-            if key not in config:
-                raise OSError(f"Item {key} not found in config")
+            # If this isn't found in our items
+            if key not in self:
+                # If we can't create something for it, that's a paddlin'
+                if not allowCreate:
+                    raise OSError(f"Item {key} not found in config")
 
-            # If the item is a configuration but our item isn't; or vice versa,
-            # that's a paddlin'
-            if isinstance(data[key], dict):
-                if not isinstance(config[key], Config):
+                # If this is a new configuration
+                if isinstance(data[key], dict):
+                    # Make the new configuration
+                    subConfig = Config(name = key)
+
+                    # Recursively load its values
+                    subConfig._loadFromDict(data = data[key], allowCreate = allowCreate)
+
+                    # Add it as one of our sub-configs
+                    self.add(subConfig)
+
+                # Else, this is an option
+                else:
+                    # Make the new option
+                    self.add(Option(name = key, type = type(data[key]), value = data[key]))
+
+            # Else, if their version of the item is a configuration
+            elif isinstance(data[key], dict):
+                # If our version isn't a configuration, that's a paddlin'
+                if not isinstance(self[key], Config):
                     raise OSError(f"Item {key} is a Config but should be an Option")
 
-                Config._loadFromDict(config = config[key], data = data[key])
+                # Recursively load our sub-config with the contents
+                self[key]._loadFromDict(data = data[key], allowCreate = allowCreate)
 
+            # Else, their version of the item is an option
             else:
-                if not isinstance(config[key], Option):
+                # If our version isn't an option, that's a paddlin'
+                if not isinstance(self[key], Option):
                     raise OSError(f"Item {key} is an Option but should be a Config")
 
-                config[key] = data[key]
+                # Load our option with the contents
+                self[key] = data[key]
 
-    def saveToFile(self, filename: str = "config.yaml"):
-        """Saves configuration values to a file
-
-        :param self:
-            Self
-        :param filename:
-            The file to save the configuration to
-
-        :return none:
-        """
-
-        # Write the config to disk
-        with open(filename, "w") as configFile:
-            data = {
-                self.name: Config._getConfigDict(config = self)
-            }
-
-            yaml.dump(data, configFile, Dumper = Dumper)
-
-    def loadFromFile(self, filename: str = "config.yaml"):
-        """Loads a configuration from a file
+    def save(self) -> bool:
+        """Saves configuration values to our backend
 
         :param self:
             Self
-        :param filename:
-            The file to load the configuration from
 
-        :raise OSError:
-            Failed to load configuration from file
-
-        :return none:
+        :return True:
+            Configuration saved to backend
+        :return False:
+            Backend not available
         """
 
-        return self._loadFromDict(
-            data = Config._getFileDict(filename = filename)["root"]
-        )
+        if self._backend is None:
+            return False
 
-    @staticmethod
-    def makeFromFile(filename: str = "config.yaml"):
-        """Makes a configuration from a file
+        self._backend.setDict(data = {"root": self._getDict()})
 
-        :param filename:
-            The file to load the configuration from
+        return True
 
-        :raise OSError:
-            Failed to load configuration from file
+    def load(self, allowCreate: bool = False) -> bool:
+        """Loads configuration values from our backend
 
-        :return Config:
-            The loaded configuration
+        :param self:
+            Self
+        :param allowCreate:
+            Whether or not to allow creating configurations and options on the
+            fly
+
+        :return True:
+            Configuration loaded from backend
+        :return False:
+            Backend not available
         """
 
-        return Config._makeFromDict(
-            name = "root",
-            data = Config._getFileDict(filename = filename)["root"]
-        )
+        if self._backend is None:
+            return False
+
+        data = self._backend.getDict()
+
+        if "root" not in data:
+            return True
+
+        self._loadFromDict(data = data["root"], allowCreate = allowCreate)
+
+        return True
