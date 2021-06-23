@@ -111,6 +111,23 @@ class Config:
 
         return thing
 
+    def __len__(self) -> int:
+        """Gets the number of options in our full configuration tree
+
+        :param self:
+            Self
+
+        :return int:
+            The number of options
+        """
+
+        count = len(self._options)
+
+        for subConfig in self._subConfigs:
+            count += len(subConfig)
+
+        return count
+
     def __getitem__(self, name: str):
         """Get an Option or Config
 
