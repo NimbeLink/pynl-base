@@ -11,7 +11,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 from .config import Config
-from .config import Option
+from .option import Option
 
 __all__ = [
     "Config",
