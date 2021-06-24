@@ -82,6 +82,18 @@ class Config:
 
         return self._options
 
+    def clear(self) -> None:
+        """Clears our sub-configurations and options
+
+        :param self:
+            Self
+
+        :return none:
+        """
+
+        self._subConfigs = []
+        self._options = []
+
     def add(self, thing: typing.Union[Option, "Config", Backend]):
         """Add something to this configuration
 
