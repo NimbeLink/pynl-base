@@ -67,8 +67,8 @@ class Option:
     def __init__(
         self,
         name: str,
-        type: object = None,
         value: object = None,
+        type: object = None,
         choices: typing.List[object] = None
     ):
         """Creates a new configuration option
@@ -77,10 +77,10 @@ class Option:
             Self
         :param name:
             The name of this option
-        :param type:
-            The type of value this contains
         :param value:
             The value of this option
+        :param type:
+            The type of value this contains
         :param choices:
             The available values to choose from
 
@@ -88,8 +88,8 @@ class Option:
         """
 
         self._name = name
-        self._type = type
         self._value = value
+        self._type = type
         self._choices = choices
 
     def __lt__(self, other: "Option") -> bool:
