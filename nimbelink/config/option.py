@@ -10,8 +10,10 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import functools
 import typing
 
+@functools.total_ordering
 class Option:
     """This class represents a configuration option
 
@@ -89,6 +91,25 @@ class Option:
         self._type = type
         self._value = value
         self._choices = choices
+
+    def __lt__(self, other: "Option") -> bool:
+        """Checks if we're less than another option
+
+        The comparison is done by comparing our name to theirs, meaning any
+        sorting of options will result in an alphabetized list.
+
+        :param self:
+            Self
+        :param other:
+            The thing to compare us to
+
+        :return True:
+            We are 'less' than them
+        :return False:
+            We are 'greater than or equal' to them
+        """
+
+        return self._name < other._name
 
     @property
     def name(self):

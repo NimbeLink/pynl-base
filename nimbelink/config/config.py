@@ -10,11 +10,13 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import functools
 import typing
 
 from .backend import Backend
 from .option import Option
 
+@functools.total_ordering
 class Config:
     """This class creates a configuration container for different levels in the
     tests
@@ -111,6 +113,25 @@ class Config:
             raise ValueError(f"Can't add {type(thing)} to config")
 
         return thing
+
+    def __lt__(self, other: "Config") -> bool:
+        """Checks if we're less than another configuration
+
+        The comparison is done by comparing our name to theirs, meaning any
+        sorting of configurations will result in an alphabetized list.
+
+        :param self:
+            Self
+        :param other:
+            The thing to compare us to
+
+        :return True:
+            We are 'less' than them
+        :return False:
+            We are 'greater than or equal' to them
+        """
+
+        return self._name < other._name
 
     def __len__(self) -> int:
         """Gets the number of options in our full configuration tree
