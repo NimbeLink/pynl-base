@@ -34,12 +34,25 @@ class Config:
         :return none:
         """
 
-        self.name = name
+        self._name = name
 
         self._subConfigs = []
         self._options = []
 
         self._backend = None
+
+    @property
+    def name(self):
+        """Get the name of an option
+
+        :param self:
+            Self
+
+        :return String:
+            The name of the option
+        """
+
+        return self._name
 
     @property
     def subConfigs(self):
@@ -235,7 +248,7 @@ class Config:
                 pass
 
         # Put this together ourselves
-        string = f"config {self.name}:"
+        string = f"config {self._name}:"
 
         for option in self._options:
             string += f"\n    option {option}"
