@@ -11,9 +11,17 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 from .config import Config
-from .config import Option
+from .option import Option
+
+from .backend import Backend
+from .west import WestBackend
+from .yaml import YamlBackend
 
 __all__ = [
     "Config",
-    "Option"
+    "Option",
+
+    "Backend",
+    "YamlBackend",
+    "WestBackend"
 ]
