@@ -162,6 +162,9 @@ class Xmodem:
         # The id of the current packet being sent
         self.packetId = Xmodem.Packet.getFirstPacketId()
 
+        # Default to packet sizes of 1024
+        self.packetSize = 1024
+
     def _clear(self) -> None:
         """Clears our device's input/output buffers
 
@@ -332,15 +335,13 @@ class Xmodem:
 
         return False
 
-    def transfer(self, data: bytearray, packetSize: int = None) -> bool:
+    def transfer(self, data: bytearray) -> bool:
         """Transfers data using XMODEM
 
         :param self:
             Self
         :param data:
             Bytes-like data to send
-        :param packetSize:
-            The size of the packets to use
 
         :raise ValueError:
             Invalid packet size
@@ -350,13 +351,6 @@ class Xmodem:
         :return False
             Failed to send file
         """
-        # Use a packet size of 1024 (XMODEM-1K) by default
-        if packetSize is None:
-            packetSize = 1024
-
-        # Verify that the packet size is valid
-        if packetSize not in Xmodem.Packet.TransferSizes:
-            raise ValueError(f"Can't use packet size of {packetSize}!")
 
         # Result of transfer is failure until proven otherwise
         success = False
@@ -374,7 +368,7 @@ class Xmodem:
             time.sleep(0.01)
 
             # Try to read the next chunk of data
-            packetData = data[count : count + packetSize]
+            packetData = data[count : count + self.packetSize]
 
             # If we're out of data, move on
             if len(packetData) < 1:
