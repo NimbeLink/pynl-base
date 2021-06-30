@@ -69,6 +69,9 @@ class Xmodem:
             :param packetId:
                 The ID of this packet
 
+            :raise ValueError:
+                Packet data too large
+
             :return Array of bytes:
                 The packet
             """
@@ -78,9 +81,11 @@ class Xmodem:
             if len(packetData) <= 128:
                 packetStart = cls.SmallStart
                 padLength = 128 - len(packetData)
-            else:
+            elif len(packetData) <= 1024:
                 packetStart = cls.LargeStart
                 padLength = 1024 - len(packetData)
+            else:
+                raise ValueError("Cannot send data that doesn't fit into 128- or 1024-byte packet")
 
             # If we need to pad the packet, do so
             #
