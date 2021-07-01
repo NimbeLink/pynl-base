@@ -54,8 +54,6 @@ class WestCommand(Command, west.commands.WestCommand):
             Self
         :param *args:
             Our positional arguments
-        :param configuration:
-            west-controlled configuration options
         :param **kwargs:
             Our keyword arguments
 

@@ -17,7 +17,6 @@ import sys
 import textwrap
 import typing
 
-import nimbelink.config as config
 import nimbelink.utils as utils
 
 class Command:
@@ -189,7 +188,6 @@ class Command:
         name: str,
         help: str,
         description: str = None,
-        configuration: config.Config = None,
         subCommands: typing.Union["Command", "Command.SubCommand"] = None,
         needUsb: bool = False
     ) -> None:
@@ -211,8 +209,6 @@ class Command:
             The short-form help text of the Skywire command
         :param description:
             The long-form description text of the Skywire command
-        :param configuration:
-            A configuration for this command
         :param subCommands:
             Sub-commands that this command contains
         :param needUsb:
@@ -230,15 +226,6 @@ class Command:
         self._name = name
         self._help = help
         self._description = Command._generateDescription(description = description)
-
-        self._configuration = configuration
-
-        # Add the configurations as additional description text
-        if (self._configuration is not None) and (len(self._configuration) > 0):
-            self._description += "\n\nConfigurations:\n\n"
-
-            for line in f"{self._configuration}".split("\n"):
-                self._description += f"    {line}\n"
 
         self._subCommands = []
 
@@ -287,19 +274,6 @@ class Command:
 
         # Handle the arguments
         return self._runCommand(args = args)
-
-    @property
-    def configuration(self) -> config.Config:
-        """Gets our configuration manager
-
-        :param self:
-            Self
-
-        :return config.Config:
-            Our configuration
-        """
-
-        return self._configuration
 
     def _createParser(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """Creates a parser
@@ -366,15 +340,13 @@ class Command:
             # Add this sub-command's arguments
             subCommand._addArguments(parser = subParser)
 
-    def _runCommand(self, args: typing.List[object], configuration: config.Config = None) -> int:
+    def _runCommand(self, args: typing.List[object]) -> int:
         """Runs the command
 
         :param self:
             Self
         :param args:
             Our known/expected arguments
-        :param configuration:
-            A configuration to use, if any
 
         :return int:
             Our result
@@ -384,11 +356,6 @@ class Command:
         # we're running under WSL, elevate to PowerShell
         if self._needUsb and utils.Wsl.isWsl():
             return utils.Wsl.forward()
-
-        # If we don't have a configuration and one was given to us, use it as
-        # our own
-        if (self._configuration is None) and (configuration is not None):
-            self._configuration = configuration
 
         try:
             # Always give the base command the chance to run
@@ -411,14 +378,10 @@ class Command:
 
             # Try to find a sub-command that'll run this
             for subCommand in self._subCommands:
-                # If this is a matching sub-command, pass our arguments and our
-                # configuration to it for handling
-                #
-                # Note that this won't necessarily force the sub-command to use
-                # our configuration, but rather it'll provide them with a
-                # configuration in the event we have one but they do not.
+                # If this is a matching sub-command, pass our arguments to it
+                # for handling
                 if subCommand._name == subCommandName:
-                    return subCommand._runCommand(args = args, configuration = self._configuration)
+                    return subCommand._runCommand(args = args)
 
             # We couldn't find this command somehow -- despite argparse passing
             # along to us -- so just use something as the error
