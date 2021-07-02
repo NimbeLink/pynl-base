@@ -38,20 +38,18 @@ class CtrlAp:
         MailboxRxStatus         = 0x02C
         Idr                     = 0x0FC
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, dap: Dap) -> None:
         """Creates a new AHB-AP
 
         :param self:
             Self
-        :param *args:
-            Positional arguments
-        :param **kwargs:
-            Keyword arguments
+        :param dap:
+            The DAP to use
 
         :return none:
         """
 
-        self.dap = Dap(*args, **kwargs)
+        self._dap = dap
 
     def readRegister(self, register: int) -> int:
         """Reads a register value
@@ -65,7 +63,7 @@ class CtrlAp:
             The register's value
         """
 
-        return self.dap.api.read_access_port_register(self.Port, register)
+        return self._dap.api.read_access_port_register(self.Port, register)
 
     def _waitAllErased(self) -> bool:
         """Waits for an erase all operation to finish
@@ -112,7 +110,7 @@ class CtrlAp:
             Failed to erase all
         """
 
-        self.dap.api.write_access_port_register(self.Port, self.Registers.EraseAll, 0x1)
+        self._dap.api.write_access_port_register(self.Port, self.Registers.EraseAll, 0x1)
 
         # Make sure the value gets flushed
         self.readRegister(self.Registers.Reset)
@@ -133,7 +131,7 @@ class CtrlAp:
             Failed to disable erase protection
         """
 
-        self.dap.api.write_access_port_register(self.Port, self.Registers.EraseProtectDisable, key)
+        self._dap.api.write_access_port_register(self.Port, self.Registers.EraseProtectDisable, key)
 
         # Make sure the value gets flushed
         self.readRegister(self.Registers.Reset)
@@ -196,7 +194,7 @@ class CtrlAp:
                 return False
 
             # Write out the next value
-            self.dap.api.write_access_port_register(self.Port, self.Registers.MailboxTxData, value)
+            self._dap.api.write_access_port_register(self.Port, self.Registers.MailboxTxData, value)
 
             # Wait for the value to be read
             if not self.waitMailboxRead(timeout = timeout):

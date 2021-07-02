@@ -177,7 +177,7 @@ class Mailbox:
 
         return False
 
-    def dfu(self, autoReboot: bool = True) -> bool:
+    def dfu(self, autoReboot: bool = None) -> bool:
         """Starts an application DFU
 
         :param self:
@@ -191,6 +191,9 @@ class Mailbox:
         :return False:
             Failed to start DFU
         """
+
+        if autoReboot is None:
+            autoReboot = True
 
         # Form the request
         request = Mailbox.Packet(

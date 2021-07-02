@@ -12,8 +12,6 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 import time
 
-import nimbelink.utils as utils
-
 from .ahb import Ahb
 
 class Uicr:
@@ -37,20 +35,18 @@ class Uicr:
         Otp                     = Start + 0x108
         WriteUicrNs             = NsNvmcStart + 0x588
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, ahb: Ahb) -> None:
         """Creates a new UICR-aware AHB-AP
 
         :param self:
             Self
-        :param *args:
-            Positional arguments
-        :param **kwargs:
-            Keyword arguments
+        :param ahb:
+            The AHB to use
 
         :return none:
         """
 
-        self.ahb = Ahb(*args, **kwargs)
+        self._ahb = ahb
 
     def enableApProtect(self, secure: bool) -> None:
         """Attempts to enable Access Port protection
@@ -62,6 +58,10 @@ class Uicr:
 
         :return none:
         """
+
+        # Our utilities might in turn try to use debugger stuff, so be lazy
+        # about our import
+        import nimbelink.utils as utils
 
         if secure:
             chunks = [
@@ -78,9 +78,9 @@ class Uicr:
                 )
             ]
 
-        self.ahb.setSecureState(secure = secure)
+        self._ahb.setSecureState(secure = secure)
 
         # nrfjprog seems to have some issues properly writing to UICR, at least
         # through their pynrfjprog API interface, so don't use passthrough, use
         # our DAP implementation
-        utils.Flash.writeChunks(ahb = self.ahb, chunks = chunks, erase = False, passthrough = False)
+        utils.Flash.writeChunks(ahb = self._ahb, chunks = chunks, erase = False, passthrough = False)
