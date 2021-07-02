@@ -17,6 +17,7 @@ import nimbelink.cell.modem as modem
 import nimbelink.cell.modem.skywire as skywire
 import nimbelink.utils as utils
 
+from .dfu import Dfu
 from .urcs import Urcs
 
 class App(skywire.App):
@@ -110,93 +111,65 @@ class App(skywire.App):
 
         raise KeyError(f"Version for {app.name} not available")
 
-    def update(self, url: str = None, file: str = None, reboot: bool = True) -> None:
-        """Updates an application on the Skywire Nano
+    def _startDfu(self, reboot: bool = None) -> None:
+        """Starts a DFU process
 
         :param self:
             Self
-        :param url:
-            A URL for an update file to use
-        :param file:
-            A local file to send to the device
         :param reboot:
-            Whether or not to reboot after the update completes
+            Whether or not to permit rebooting when done
 
-        :raise OSError:
-            Cannot perform update without kernel logging serial port
-        :raise OSError:
-            Failed to send update data
-        :raise AtError:
-            Failed to start update
+        :raise modem.AtError:
+            Failed to start DFU
 
         :return none:
         """
 
-        # If we're sending a file
-        if file != None:
-            # If we don't have a kernel log serial port to use, we won't be able
-            # to facilitate this
-            if self._nano.kernelLog == None:
-                raise OSError("Cannot perform update without kernel logging serial port")
+        if reboot is None:
+            reboot = True
 
-            # Open the file before trying to start the update, as we don't want
-            # to have DFU waiting for us if we're just going to fail to open the
-            # file anyway
-            with open(file, "rb") as _file:
-                # Make an XMODEM protocol to use to send the data
-                xmodem = utils.Xmodem(device = self._nano.kernelLog)
-
-                # Make our command
-                command = "AT#FWUPD=1"
-
-                # If we're not rebooting, prevent it
-                if not reboot:
-                    command += ",0"
-
-                # Kick off the DFU
-                response = self._nano.at.sendCommand(command)
-
-                # If that failed, that's a paddlin'
-                if not response:
-                    raise modem.AtError(response)
-
-                # Try to give the logging a little time to come across before we
-                # start using the serial port
-                time.sleep(0.5)
-
-                # Send the data
-                transferred = xmodem.transfer(data = _file.read())
-
-                # If that failed, that's a paddlin'
-                if not transferred:
-                    raise OSError("Failed to send update data")
-
-        # Else, if we're using FOTA
-        elif url != None:
-            # Split the URL into a hostname and a filename
-            result = urllib.parse.urlparse(url)
-
+        # If we have an AT interface, use it
+        if self._nano.at is not None:
             # Make our command
-            #
-            # Note that the path from urllib will contain any forward slash
-            # between it and the network location, which we'll want to omit from
-            # our AT command.
-            command = f"AT#XFOTA=\"{result.netloc}\",\"{result.path[1:]}\""
+            command = "AT#FWUPD=1"
 
             # If we're not rebooting, prevent it
             if not reboot:
-                command += ",,0"
+                command += ",0"
 
-            # Kick off the FOTA
+            # Kick off the DFU
             response = self._nano.at.sendCommand(command)
 
             # If that failed, that's a paddlin'
             if not response:
                 raise modem.AtError(response)
 
-        # Else, that's a paddlin'
+            # Try to give the logging a little time to come across before we
+            # start using the serial port
+            time.sleep(0.5)
+
+        # Else, if we have a debug tool, use it
+        elif self._nano.tool is not None:
+            if not self._nano.tool.mailbox.dfu(autoReboot = reboot):
+                raise modem.AtError("Failed to trigger DFU with debugger and no AT interface")
+
+        # Else, no way to do this
         else:
-            raise ValueError("Must have either a URL or a file for updating")
+            raise modem.AtError("No debugger nor AT interface to trigger DFU")
+
+    def _waitForDfuFinish(self, reboot: bool) -> None:
+        """Waits for a DFU to finish, including any reboot
+
+        :param self:
+            Self
+        :param reboot:
+            Whether or not a reboot is expected
+
+        :raise OSError:
+            DFU failed
+
+        :return none:
+        """
 
         applying = False
 
@@ -208,13 +181,17 @@ class App(skywire.App):
             # Parse the DFU URC
             dfu = Urcs.Dfu.makeFromString(string = urc)
 
-            # If this is an indication of DFU finishing, we don't expect it yet,
-            # so that's a paddlin'
-            if dfu.type == Urcs.Dfu.Type.Done:
-                raise modem.AtError(urc, "Premature DFU finish")
+            # If this is a failure, that's a paddlin'
+            if dfu.type == Urcs.Dfu.Type.Failure:
+                raise OSError(f"DFU failed ({urc})")
 
-            # Else, if this is an indication of DFU starting to apply
-            elif dfu.type == Urcs.Dfu.Type.Applying:
+            # If this is an indication of DFU finishing, we must not need to
+            # wait for the reboot
+            if dfu.type == Urcs.Dfu.Type.Done:
+                return
+
+            # If this is an indication of DFU starting to apply
+            if dfu.type == Urcs.Dfu.Type.Applying:
                 # If we're not planning on rebooting, we're done
                 if not reboot:
                     return
@@ -223,10 +200,6 @@ class App(skywire.App):
                 applying = True
 
                 break
-
-            # Else, if this is a failure, that's a paddlin'
-            elif dfu.type == Urcs.Dfu.Type.Failure:
-                raise OSError(f"DFU failed ({urc})")
 
         # Wait for the device to boot again
         #
@@ -262,3 +235,110 @@ class App(skywire.App):
         # If we failed to see any successful final URCs, that's a paddlin'
         if count < 1:
             raise modem.AtError(None, "Failed to get final DFU URC")
+
+    def upload(self, data: bytearray, type: Dfu.Type, reboot: bool = None) -> None:
+        """Uploads DFU data to the Skywire Nano
+
+        :param self:
+            Self
+        :param data:
+            The data to upload
+        :param type:
+            The type of data to upload
+        :param reboot:
+            Whether or not to permit rebooting
+
+        :raise AtError:
+            Failed to start upload
+        :raise OSError:
+            Failed to send data
+
+        :return none:
+        """
+
+        if reboot is None:
+            reboot = True
+
+        # If we don't have a kernel log serial port to use, we won't be able
+        # to facilitate this
+        if self._nano.kernelLog is None:
+            raise OSError("Cannot upload without kernel logging serial port")
+
+        # Format the data for DFU
+        data = Dfu.format(data = data, type = type)
+
+        # Trigger XMODEM DFU
+        self._startDfu(reboot = reboot)
+
+        # Make an XMODEM protocol to use to send the data
+        xmodem = utils.Xmodem(device = self._nano.kernelLog)
+
+        # Send the data
+        transferred = xmodem.transfer(data = data)
+
+        # If that failed, that's a paddlin'
+        if not transferred:
+            raise OSError("Failed to send update data")
+
+        # If this isn't a DFU type that needs a reboot or we aren't allowing
+        # reboots, nothing left to do
+        if not Dfu.needsReboot(type = type) or not reboot:
+            return
+
+        # If there isn't an AT interface, still allow the upload to succeed, but
+        # warn about not being able to wait for the finishing indication
+        if self._nano.at is None:
+            self._nano._logger.warning("No AT interface, cannot wait for DFU to complete")
+
+            return
+
+        # Wait for DFU to finish
+        self._waitForDfuFinish(reboot = reboot)
+
+    def fota(self, url: str = None, reboot: bool = None) -> None:
+        """Updates an application on the Skywire Nano
+
+        :param self:
+            Self
+        :param url:
+            A URL for an update file to use
+        :param file:
+            A local file to send to the device
+        :param reboot:
+            Whether or not to reboot after the update completes
+
+        :raise OSError:
+            Cannot perform update without kernel logging serial port
+        :raise OSError:
+            Failed to send update data
+        :raise AtError:
+            Failed to start update
+
+        :return none:
+        """
+
+        if reboot is None:
+            reboot = True
+
+        # Split the URL into a hostname and a filename
+        result = urllib.parse.urlparse(url)
+
+        # Make our command
+        #
+        # Note that the path from urllib will contain any forward slash between
+        # it and the network location, which we'll want to omit from our AT
+        # command.
+        command = f"AT#XFOTA=\"{result.netloc}\",\"{result.path[1:]}\""
+
+        # If we're not rebooting, prevent it
+        if not reboot:
+            command += ",,0"
+
+        # Kick off the FOTA
+        response = self._nano.at.sendCommand(command)
+
+        # If that failed, that's a paddlin'
+        if not response:
+            raise modem.AtError(response)
+
+        self._waitForDfuFinish(reboot = reboot)
