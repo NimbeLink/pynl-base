@@ -273,7 +273,7 @@ class Command:
         args = parser.parse_args(args = args)
 
         # Handle the arguments
-        return self._runCommand(args = args)
+        return self._run(args = args)
 
     def _createParser(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """Creates a parser
@@ -340,13 +340,32 @@ class Command:
             # Add this sub-command's arguments
             subCommand._addArguments(parser = subParser)
 
+    def _run(self, args: typing.List[object]) -> int:
+        """Runs the command
+
+        :param self:
+            Self
+        :param args:
+            Our arguments
+
+        :return int:
+            Our result
+        """
+
+        try:
+            return self._runCommand(args = args)
+
+        except KeyboardInterrupt as ex:
+            # Python seems to use a result of 1 as the keyboard interrupt result
+            return 1
+
     def _runCommand(self, args: typing.List[object]) -> int:
         """Runs the command
 
         :param self:
             Self
         :param args:
-            Our known/expected arguments
+            Our arguments
 
         :return int:
             Our result
@@ -387,11 +406,14 @@ class Command:
             # along to us -- so just use something as the error
             return 1
 
-        except KeyboardInterrupt as ex:
-            self.abortCommand()
+        except Exception as ex:
+            # Allow handling command issues
+            self.abortCommand(args = args, exception = ex)
 
-            # Python seems to use a result of 1 as the keyboard interrupt result
-            return 1
+            # In the event we're someone's sub-command, keep bubbling the
+            # exception up to make sure everyone gets a chance to handle the
+            # aborted command
+            raise ex
 
     def addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds parser arguments
@@ -422,7 +444,7 @@ class Command:
         :param self:
             Self
         :param args:
-            Our known/expected arguments
+            Our arguments
 
         :return int:
             Command result
@@ -432,11 +454,13 @@ class Command:
 
         raise NotImplementedError(f"runCommand() not implemented by {self.__class__.__name__}")
 
-    def abortCommand(self) -> None:
+    def abortCommand(self, args: typing.List[object], exception: Exception = None) -> None:
         """Aborts the command
 
         :param self:
             Self
+        :param exception:
+            The exception that occurred, if any
 
         :return none:
         """

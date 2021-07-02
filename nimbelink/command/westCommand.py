@@ -107,4 +107,4 @@ class WestCommand(Command, west.commands.WestCommand):
         :return none:
         """
 
-        self._runCommand(args = args)
+        self._run(args = args)
