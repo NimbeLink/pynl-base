@@ -17,13 +17,13 @@ import nimbelink.cell.modem as modem
 import nimbelink.cell.modem.skywire as skywire
 import nimbelink.utils as utils
 
-from nimbelink.cell.modem.nano.urcs import Urcs
+from .urcs import Urcs
 
 class App(skywire.App):
     """A Skywire Nano modem's application
     """
 
-    def __init__(self, nano):
+    def __init__(self, nano: "SkywireNano") -> None:
         """Creates a new Skywire Nano app
 
         :param self:
@@ -34,20 +34,27 @@ class App(skywire.App):
         :return none:
         """
 
+        super().__init__(apps = [
+            skywire.App.Instance(id = 0, name = "stack"),
+            skywire.App.Instance(id = 1, name = "at"),
+            skywire.App.Instance(id = 2, name = "modem")
+        ])
+
         self._nano = nano
 
-    @property
-    def versions(self):
-        """Gets our versions
+    def _getVersion(self, app: skywire.App.Instance) -> str:
+        """Gets an application's version
 
         :param self:
             Self
+        :param app:
+            The application whose version to get
 
         :raise AtError:
             Failed to get versions
 
-        :return Array of tuples:
-            The version names and their values
+        :return str:
+            The application's version
         """
 
         # Get the stack and AT interface versions
@@ -57,7 +64,7 @@ class App(skywire.App):
         if not response:
             raise modem.AtError(response)
 
-        versions = []
+        versions = {}
 
         # Parse the versions
         for line in response.lines:
@@ -69,7 +76,7 @@ class App(skywire.App):
                 raise modem.AtError(response, "Invalid app version response")
 
             # Make sure we remove any whitespace
-            versions.append(self.Version(name = fields[1].strip(), value = fields[2].strip()))
+            versions[fields[1].strip()] = fields[2].strip()
 
         # If there aren't two versions, that's a paddlin'
         if len(versions) != 2:
@@ -90,11 +97,20 @@ class App(skywire.App):
 
         # The modem version is just a single string, so add our own identifier
         # for it
-        versions.append(self.Version(name = "MFW", value = lines[0]))
+        versions["MFW"] = lines[0]
 
-        return versions
+        if (app.name == "stack") and ("NLS" in versions):
+            return versions["NLS"]
 
-    def update(self, url = None, file = None, reboot = True):
+        if (app.name == "at") and ("ATI" in versions):
+            return versions["ATI"]
+
+        if (app.name == "modem") and ("MFW" in versions):
+            return versions["MFW"]
+
+        raise KeyError(f"Version for {app.name} not available")
+
+    def update(self, url: str = None, file: str = None, reboot: bool = True) -> None:
         """Updates an application on the Skywire Nano
 
         :param self:
