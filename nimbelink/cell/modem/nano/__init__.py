@@ -13,6 +13,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 from .modem import SkywireNano
 
 from .app import App
+from .dfu import Dfu
 from .gpio import Gpio
 from .sim import Sim
 from .socket import Socket
@@ -21,6 +22,7 @@ __all__ = [
     "SkywireNano",
 
     "App",
+    "Dfu",
     "Gpio",
     "Sim",
     "Socket",
