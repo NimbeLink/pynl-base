@@ -28,13 +28,15 @@ class SkywireNano(skywire.Skywire):
     def __init__(
         self,
         interface: at.Interface,
-        kernelLogDevice: serial.Serial = None
+        kernelLog: serial.Serial = None
     ) -> None:
         """Creates a new Skywire Nano modem
 
         :param self:
             Self
-        :param kernelLogDevice:
+        :param interface:
+            Our AT interface
+        :param kernelLog:
             A serial port for our kernel logging output
 
         :return none:
@@ -48,20 +50,7 @@ class SkywireNano(skywire.Skywire):
             socket = Socket(self)
         )
 
-        self._kernelLogDevice = kernelLogDevice
-
-    @property
-    def kernel(self) -> serial.Serial:
-        """Gets the kernel logging device
-
-        :param self:
-            Self
-
-        :return serial.Serial:
-            The device connected to the modem's kernel log
-        """
-
-        return self._kernelLogDevice
+        self.kernelLog = kernelLog
 
     def waitForBoot(self, timeout = None):
         """Waits for the Skywire Nano to boot

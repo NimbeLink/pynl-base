@@ -136,7 +136,7 @@ class App(skywire.App):
         if file != None:
             # If we don't have a kernel log serial port to use, we won't be able
             # to facilitate this
-            if self._nano._kernelLogDevice == None:
+            if self._nano.kernelLog == None:
                 raise OSError("Cannot perform update without kernel logging serial port")
 
             # Open the file before trying to start the update, as we don't want
@@ -144,7 +144,7 @@ class App(skywire.App):
             # file anyway
             with open(file, "rb") as _file:
                 # Make an XMODEM protocol to use to send the data
-                xmodem = utils.Xmodem(device = self._nano._kernelLogDevice)
+                xmodem = utils.Xmodem(device = self._nano.kernelLog)
 
                 # Make our command
                 command = "AT#FWUPD=1"
