@@ -17,7 +17,7 @@ class Sim(skywire.Sim):
     """Skywire Nano SIM resources
     """
 
-    def __init__(self, nano):
+    def __init__(self, nano: "SkywireNano") -> None:
         """Creates a new GPIO sub-module
 
         :param self:
@@ -28,17 +28,19 @@ class Sim(skywire.Sim):
         :return none:
         """
 
-        super().__init__(count = 2)
+        super().__init__(sims = [
+            skywire.Sim.Instance(id = 0, name = "soldered", fixed = True),
+            skywire.Sim.Instance(id = 1, name = "caged", fixed = False)
+        ])
 
         self._nano = nano
 
-    @property
-    def index(self, index):
+    def _setActive(self, sim: skywire.Sim.Instance) -> None:
         """Sets our active SIM
 
         :param self:
             Self
-        :param index:
+        :param sim:
             Which SIM to select
 
         :raise AtError:
@@ -47,16 +49,13 @@ class Sim(skywire.Sim):
         :return none:
         """
 
-        response = self._nano.at.sendCommand(f"AT#SIMSELECT={index}")
+        response = self._nano.at.sendCommand(f"AT#SIMSELECT={sim.id}")
 
         if not response:
             raise modem.AtError(response)
 
-        return True
-
-    @property
-    def iccid(self):
-        """Gets our SIM's ICCID
+    def _getIccid(self, sim: skywire.Sim.Instance) -> str:
+        """Gets our current SIM's ICCID
 
         :param self:
             Self
@@ -64,9 +63,13 @@ class Sim(skywire.Sim):
         :raise AtError:
             Failed to get ICCID
 
-        :return String:
+        :return str:
             The ICCID
         """
+
+        # If this isn't our active SIM, this won't work
+        if sim != self._current:
+            raise ValueError(f"Cannot query SIM ICCID when not active ({sim} != {self._current}")
 
         response = self._nano.at.sendCommand("AT#ICCID?")
 

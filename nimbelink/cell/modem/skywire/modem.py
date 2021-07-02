@@ -114,20 +114,6 @@ class Skywire(object):
 
         return self._sim
 
-    @sim.setter
-    def sim(self, index: int) -> None:
-        """Sets our active SIM
-
-        :param self:
-            Self
-        :param index:
-            Which SIM to set
-
-        :return none:
-        """
-
-        self._sim.setActive(index = index)
-
     @property
     def socket(self) -> Socket:
         """Gets our socket sub-module
