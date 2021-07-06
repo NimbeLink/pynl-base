@@ -160,7 +160,7 @@ class Xmodem:
         self._device = device
 
         # The id of the current packet being sent
-        self.packetId = Xmodem.Packet.getFirstPacketId()
+        self._packetId = Xmodem.Packet.getFirstPacketId()
 
         # Default to packet sizes of 1024
         self.packetSize = 1024
@@ -210,15 +210,15 @@ class Xmodem:
         """
 
         # Initialize our packet ID
-        self.packetId = Xmodem.Packet.getFirstPacketId()
+        self._packetId = Xmodem.Packet.getFirstPacketId()
 
         # Clear out any previous data in the serial buffers
         self._clear()
 
-        # Try for 30 seconds to get the starting NAK, discarding single bytes
-        # until we timeout or get a NAK
         beginTime = time.time()
 
+        # Try for 30 seconds to get the starting NAK, discarding single bytes
+        # until we timeout or get a NAK
         while (time.time() - beginTime) < 30:
             # Try reading a single byte from the serial device
             start = self._device.read(1)
@@ -260,7 +260,7 @@ class Xmodem:
             # Get the packet
             packet = Xmodem.Packet.getPacket(
                 packetData = packetData,
-                packetId = self.packetId
+                packetId = self._packetId
             )
 
             self._logData(data = packet, output = True)
@@ -288,6 +288,7 @@ class Xmodem:
             # If that failed, that's a paddlin'
             if writeLength != len(packet):
                 self._logger.error("Failed to send all bytes (%d/%d)", writeLength, len(packet))
+
                 return False
 
             # Wait for a response
@@ -296,6 +297,7 @@ class Xmodem:
             # If that failed, that's a paddlin'
             if (response is None) or (len(response) < 1):
                 self._logger.error("Failed to get response")
+
                 return False
 
             self._logData(data = response, output = False)
@@ -312,10 +314,10 @@ class Xmodem:
         # If it wasn't acknowledged, that's a paddlin'
         if response[0] != Xmodem.Packet.Ack:
             self._logger.error("Failed to get ACK")
-            return False
 
+            return False
         # Use the next packet ID next time
-        self.packetId = Xmodem.Packet.getNextPacketId(packetId = self.packetId)
+        self._packetId = Xmodem.Packet.getNextPacketId(packetId = self._packetId)
 
         return True
 
@@ -338,10 +340,10 @@ class Xmodem:
         # Stop transmission
         self._device.write(stopData)
 
-        # Try for 30 seconds to get the last NAK, discarding single bytes until
-        # we timeout or get a NAK
         beginTime = time.time()
 
+        # Try for 30 seconds to get the last NAK, discarding single bytes until
+        # we timeout or get a NAK
         while (time.time() - beginTime) < 30:
             # Try reading a single byte from the serial device
             start = self._device.read(1)
