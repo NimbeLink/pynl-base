@@ -273,6 +273,14 @@ class App(skywire.App):
         # Make an XMODEM protocol to use to send the data
         xmodem = utils.Xmodem(device = self._nano.kernelLog)
 
+        # If we would use the larger packet size but it would only result in a
+        # single packet being sent for the whole transfer, make sure we force
+        # using the 128-byte transfer packet size
+        #
+        # This is per a bug in the Skywire Nano.
+        if (xmodem.packetSize == 1024) and (len(data) <= 1024):
+            xmodem.packetSize = 128
+
         # Send the data
         transferred = xmodem.transfer(data = data)
 
