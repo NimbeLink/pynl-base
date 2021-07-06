@@ -165,6 +165,11 @@ class Xmodem:
         # Default to packet sizes of 1024
         self.packetSize = 1024
 
+        # Set some default XMODEM timeouts
+        self.startTimeout = 30.0
+        self.stopTimeout = 30.0
+        self.packetTimeout = None
+
     def _logData(self, data: bytearray, output: bool) -> None:
         """Logs data
 
@@ -219,7 +224,7 @@ class Xmodem:
 
         # Try for 30 seconds to get the starting NAK, discarding single bytes
         # until we timeout or get a NAK
-        while (time.time() - beginTime) < 30:
+        while (time.time() - beginTime) < self.startTimeout:
             # Try reading a single byte from the serial device
             start = self._device.read(1)
 
@@ -237,6 +242,56 @@ class Xmodem:
 
         return False
 
+    def _endTransmission(self) -> bool:
+        """Ends XMODEM transmission
+
+        :param self:
+            Self
+
+        :return True:
+            Transmission ended successfully
+        :return False:
+            Ending transmission failed
+        """
+
+        stopData = bytearray([Xmodem.Packet.EndOfTransmission])
+
+        self._logData(data = stopData, output = True)
+
+        # Stop transmission
+        self._device.write(stopData)
+
+        beginTime = time.time()
+
+        # Try for 30 seconds to get the last NAK, discarding single bytes until
+        # we timeout or get a NAK
+        while (time.time() - beginTime) < self.stopTimeout:
+            # Try reading a single byte from the serial device
+            start = self._device.read(1)
+
+            # Make sure we didn't timeout
+            if start:
+                # Log the byte
+                self._logData(data = start, output = False)
+
+                # If we got an ACK return success
+                if start[0] == Xmodem.Packet.Ack:
+                    return True
+
+                # If we got a NAK, still return success, but warn about it
+                #
+                # Some products have a bug where a NAK is erroneously sent on
+                # the final EOT indication.
+                if start[0] == Xmodem.Packet.Nak:
+                    self._logger.warning("EOT response was a NAK")
+
+                    return True
+
+        # Failed to get ending ACK
+        self._logger.error("Failed to get final ACK")
+
+        return False
+
     def _sendData(self, packetData: bytearray) -> int:
         """Sends a packet to a device
 
@@ -251,12 +306,12 @@ class Xmodem:
             Failed to send packet
         """
 
-        response = bytes([Xmodem.Packet.Nak])
+        # If we have one, update the read timeout so we wait the proper amount
+        # of time for a packet response
+        if self.packetTimeout is not None:
+            self._device.timeout = self.packetTimeout
 
-        beginTime = time.time()
-
-        # Try for 40 seconds to send the packet
-        while time.time() - beginTime < 40:
+        while True:
             # Get the packet
             packet = Xmodem.Packet.getPacket(
                 packetData = packetData,
@@ -304,72 +359,21 @@ class Xmodem:
 
             # If the modem ACKed the packet, move on
             if response[0] == Xmodem.Packet.Ack:
-                break
+                # Use the next packet ID next time
+                self._packetId = Xmodem.Packet.getNextPacketId(packetId = self._packetId)
 
-            # Try again in two seconds if the modem didn't ACK
-            self._logger.warning("Failed to get ACK, reattempting...")
+                return True
 
-            time.sleep(2)
+            # If the modem NAKed the packet, try again
+            if response[0] == Xmodem.Packet.Nak:
+                self._logger.warning("Packet NAKed, retrying")
 
-        # If it wasn't acknowledged, that's a paddlin'
-        if response[0] != Xmodem.Packet.Ack:
-            self._logger.error("Failed to get ACK")
+                continue
+
+            # We must have gotten a garbage response, so abort
+            self._logger.warning("Failed to get ACK")
 
             return False
-        # Use the next packet ID next time
-        self._packetId = Xmodem.Packet.getNextPacketId(packetId = self._packetId)
-
-        return True
-
-    def _endTransmission(self) -> bool:
-        """Ends XMODEM transmission
-
-        :param self:
-            Self
-
-        :return True:
-            Transmission ended successfully
-        :return False:
-            Ending transmission failed
-        """
-
-        stopData = bytearray([Xmodem.Packet.EndOfTransmission])
-
-        self._logData(data = stopData, output = True)
-
-        # Stop transmission
-        self._device.write(stopData)
-
-        beginTime = time.time()
-
-        # Try for 30 seconds to get the last NAK, discarding single bytes until
-        # we timeout or get a NAK
-        while (time.time() - beginTime) < 30:
-            # Try reading a single byte from the serial device
-            start = self._device.read(1)
-
-            # Make sure we didn't timeout
-            if start:
-                # Log the byte
-                self._logData(data = start, output = False)
-
-                # If we got an ACK return success
-                if start[0] == Xmodem.Packet.Ack:
-                    return True
-
-                # If we got a NAK, still return success, but warn about it
-                #
-                # Some products have a bug where a NAK is erroneously sent on
-                # the final EOT indication.
-                if start[0] == Xmodem.Packet.Nak:
-                    self._logger.warning("EOT response was a NAK")
-
-                    return True
-
-        # Failed to get ending ACK
-        self._logger.error("Failed to get final ACK")
-
-        return False
 
     def transfer(self, data: bytearray) -> bool:
         """Transfers data using XMODEM
