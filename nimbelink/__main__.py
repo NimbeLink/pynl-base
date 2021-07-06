@@ -22,10 +22,7 @@ def main():
     :return none:
     """
 
-    # Set up some basic logging for commands
-    command.Command.setupLogging()
-
-    # Run the command
+    # Run commands, assuming they're coming from sys.argv
     result = command.run()
 
     # Exit with the result of the command running

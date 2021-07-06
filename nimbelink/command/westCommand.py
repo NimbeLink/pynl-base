@@ -54,16 +54,11 @@ class WestCommand(Command, west.commands.WestCommand):
             Self
         :param *args:
             Our positional arguments
-        :param configuration:
-            west-controlled configuration options
         :param **kwargs:
             Our keyword arguments
 
         :return none:
         """
-
-        # Set up some basic logging for commands
-        Command.setupLogging()
 
         # First pass our arguments to the NimbeLink command base
         Command.__init__(self, *args, **kwargs)
@@ -109,4 +104,4 @@ class WestCommand(Command, west.commands.WestCommand):
         :return none:
         """
 
-        self._runCommand(args = args)
+        self._run(args = args)

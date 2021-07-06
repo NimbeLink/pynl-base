@@ -17,7 +17,6 @@ import sys
 import textwrap
 import typing
 
-import nimbelink.config as config
 import nimbelink.utils as utils
 
 class Command:
@@ -68,33 +67,6 @@ class Command:
 
             except ImportError:
                 return None
-
-    @staticmethod
-    def setupLogging() -> None:
-        """Sets up basic logging for commands
-
-        :param none:
-
-        :return none:
-        """
-
-        # Get a logger for everything
-        root = logging.getLogger()
-
-        # If our logger already has handlers set up, don't bother adding our own
-        # -- someone with more context has already set it up, or we've already
-        # configured logging ourselves
-        if root.hasHandlers():
-            return
-
-        # Everything gets 'info'-level logging
-        root.setLevel(logging.INFO)
-
-        # Make a handler for logging to standard output
-        handler = logging.StreamHandler()
-
-        # Add the handler to our root loggers
-        root.addHandler(handler)
 
     @staticmethod
     def _generateDescription(description: str) -> str:
@@ -189,7 +161,6 @@ class Command:
         name: str,
         help: str,
         description: str = None,
-        configuration: config.Config = None,
         subCommands: typing.Union["Command", "Command.SubCommand"] = None,
         needUsb: bool = False
     ) -> None:
@@ -211,8 +182,6 @@ class Command:
             The short-form help text of the Skywire command
         :param description:
             The long-form description text of the Skywire command
-        :param configuration:
-            A configuration for this command
         :param subCommands:
             Sub-commands that this command contains
         :param needUsb:
@@ -230,15 +199,6 @@ class Command:
         self._name = name
         self._help = help
         self._description = Command._generateDescription(description = description)
-
-        self._configuration = configuration
-
-        # Add the configurations as additional description text
-        if (self._configuration is not None) and (len(self._configuration) > 0):
-            self._description += "\n\nConfigurations:\n\n"
-
-            for line in f"{self._configuration}".split("\n"):
-                self._description += f"    {line}\n"
 
         self._subCommands = []
 
@@ -286,20 +246,7 @@ class Command:
         args = parser.parse_args(args = args)
 
         # Handle the arguments
-        return self._runCommand(args = args)
-
-    @property
-    def configuration(self) -> config.Config:
-        """Gets our configuration manager
-
-        :param self:
-            Self
-
-        :return config.Config:
-            Our configuration
-        """
-
-        return self._configuration
+        return self._run(args = args)
 
     def _createParser(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         """Creates a parser
@@ -366,15 +313,32 @@ class Command:
             # Add this sub-command's arguments
             subCommand._addArguments(parser = subParser)
 
-    def _runCommand(self, args: typing.List[object], configuration: config.Config = None) -> int:
+    def _run(self, args: typing.List[object]) -> int:
         """Runs the command
 
         :param self:
             Self
         :param args:
-            Our known/expected arguments
-        :param configuration:
-            A configuration to use, if any
+            Our arguments
+
+        :return int:
+            Our result
+        """
+
+        try:
+            return self._runCommand(args = args)
+
+        except KeyboardInterrupt as ex:
+            # Python seems to use a result of 1 as the keyboard interrupt result
+            return 1
+
+    def _runCommand(self, args: typing.List[object]) -> int:
+        """Runs the command
+
+        :param self:
+            Self
+        :param args:
+            Our arguments
 
         :return int:
             Our result
@@ -384,11 +348,6 @@ class Command:
         # we're running under WSL, elevate to PowerShell
         if self._needUsb and utils.Wsl.isWsl():
             return utils.Wsl.forward()
-
-        # If we don't have a configuration and one was given to us, use it as
-        # our own
-        if (self._configuration is None) and (configuration is not None):
-            self._configuration = configuration
 
         try:
             # Always give the base command the chance to run
@@ -411,24 +370,23 @@ class Command:
 
             # Try to find a sub-command that'll run this
             for subCommand in self._subCommands:
-                # If this is a matching sub-command, pass our arguments and our
-                # configuration to it for handling
-                #
-                # Note that this won't necessarily force the sub-command to use
-                # our configuration, but rather it'll provide them with a
-                # configuration in the event we have one but they do not.
+                # If this is a matching sub-command, pass our arguments to it
+                # for handling
                 if subCommand._name == subCommandName:
-                    return subCommand._runCommand(args = args, configuration = self._configuration)
+                    return subCommand._runCommand(args = args)
 
             # We couldn't find this command somehow -- despite argparse passing
             # along to us -- so just use something as the error
             return 1
 
-        except KeyboardInterrupt as ex:
-            self.abortCommand()
+        except Exception as ex:
+            # Allow handling command issues
+            self.abortCommand(args = args, exception = ex)
 
-            # Python seems to use a result of 1 as the keyboard interrupt result
-            return 1
+            # In the event we're someone's sub-command, keep bubbling the
+            # exception up to make sure everyone gets a chance to handle the
+            # aborted command
+            raise ex
 
     def addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds parser arguments
@@ -459,7 +417,7 @@ class Command:
         :param self:
             Self
         :param args:
-            Our known/expected arguments
+            Our arguments
 
         :return int:
             Command result
@@ -469,11 +427,13 @@ class Command:
 
         raise NotImplementedError(f"runCommand() not implemented by {self.__class__.__name__}")
 
-    def abortCommand(self) -> None:
+    def abortCommand(self, args: typing.List[object], exception: Exception = None) -> None:
         """Aborts the command
 
         :param self:
             Self
+        :param exception:
+            The exception that occurred, if any
 
         :return none:
         """

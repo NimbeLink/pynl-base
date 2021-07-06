@@ -13,9 +13,11 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import typing
 
 from .command import Command
+from .rootCommand import RootCommand
 
 __all__ = [
     "Command",
+    "RootCommand"
 ]
 
 # West commands are only available if the local system has the 'west' package
@@ -47,8 +49,6 @@ def register(command: Command) -> None:
 
     __commands__.append(command)
 
-from .__cmd__ import RootCommand
-
 def run(args: typing.List[object] = None) -> int:
     """Runs our commands with arguments
 
@@ -61,4 +61,8 @@ def run(args: typing.List[object] = None) -> int:
         The result of the command
     """
 
-    return RootCommand(subCommands = __commands__).parseAndRun(args = args)
+    return RootCommand(
+        name = "nimbelink",
+        help = "Provides sub-commands",
+        subCommands = __commands__
+    ).parseAndRun(args = args)
