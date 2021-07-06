@@ -165,6 +165,25 @@ class Xmodem:
         # Default to packet sizes of 1024
         self.packetSize = 1024
 
+    def _logData(self, data: bytearray, output: bool) -> None:
+        """Logs data
+
+        :param self:
+            Self
+        :param data:
+            The data to log
+        :param output:
+            Whether this is outbound or inbound data
+
+        :return none:
+        """
+
+        if output:
+            self._logger.debug(">>> %s", ascii(data))
+
+        else:
+            self._logger.debug("<<< %s", ascii(data))
+
     def _clear(self) -> None:
         """Clears our device's input/output buffers
 
@@ -206,12 +225,12 @@ class Xmodem:
 
             # Make sure we didn't timeout
             if start:
+                # Log the byte
+                self._logData(data = start, output = False)
+
                 # If we got a NAK return success
                 if start[0] == Xmodem.Packet.Nak:
                     return True
-
-                # Log the non-NAK byte
-                self._logger.debug(start)
 
         # Failed to get starting NAK
         self._logger.error("Failed to get starting NAK")
@@ -244,7 +263,7 @@ class Xmodem:
                 packetId = self.packetId
             )
 
-            self._logger.debug("Sending %s", ascii(packet))
+            self._logData(data = packet, output = True)
 
             # If we aren't using flow control, chunk the data
             if not self._device.rtscts:
@@ -268,8 +287,7 @@ class Xmodem:
 
             # If that failed, that's a paddlin'
             if writeLength != len(packet):
-                self._logger.error("Failed to send all bytes (%d/%d)",
-                                                    writeLength, len(packet))
+                self._logger.error("Failed to send all bytes (%d/%d)", writeLength, len(packet))
                 return False
 
             # Wait for a response
@@ -280,20 +298,20 @@ class Xmodem:
                 self._logger.error("Failed to get response")
                 return False
 
-            self._logger.debug("Received %s", ascii(response.decode()))
+            self._logData(data = response, output = False)
 
+            # If the modem ACKed the packet, move on
             if response[0] == Xmodem.Packet.Ack:
-                # Modem ACKed packet
                 break
-            else:
-                # Try again in two seconds if the modem didn't ACK
-                self._logger.warning("Failed to get ACK, reattempting...")
 
-                time.sleep(2)
+            # Try again in two seconds if the modem didn't ACK
+            self._logger.warning("Failed to get ACK, reattempting...")
+
+            time.sleep(2)
 
         # If it wasn't acknowledged, that's a paddlin'
         if response[0] != Xmodem.Packet.Ack:
-            self._logger.error("Failed to get ACK (%s)", ascii(response[0]))
+            self._logger.error("Failed to get ACK")
             return False
 
         # Use the next packet ID next time
@@ -313,8 +331,12 @@ class Xmodem:
             Ending transmission failed
         """
 
+        stopData = bytearray([Xmodem.Packet.EndOfTransmission])
+
+        self._logData(data = stopData, output = True)
+
         # Stop transmission
-        self._device.write(bytearray([Xmodem.Packet.EndOfTransmission]))
+        self._device.write(stopData)
 
         # Try for 30 seconds to get the last NAK, discarding single bytes until
         # we timeout or get a NAK
@@ -326,12 +348,15 @@ class Xmodem:
 
             # Make sure we didn't timeout
             if start:
+                # Log the byte
+                self._logData(data = start, output = False)
+
                 # If we got an ACK return success
                 if start[0] == Xmodem.Packet.Ack:
                     return True
 
-                # Log the non-ACK byte
-                self._logger.debug(start)
+        # Failed to get ending ACK
+        self._logger.error("Failed to get final ACK")
 
         return False
 
@@ -362,6 +387,8 @@ class Xmodem:
         if not self._startTransmission():
             return False
 
+        self._logger.info("Sending %d bytes", len(data))
+
         # Try sending the data to the modem
         while True:
             # Delay a little bit to help with stability
@@ -375,12 +402,17 @@ class Xmodem:
                 success = True
                 break
 
+            self._logger.debug("Sending bytes %d-%d", count, count + self.packetSize)
+
             # If we fail to send the data, stop
             if not self._sendData(packetData = packetData):
                 break
 
             # Use the next chunk of data
             count += len(packetData)
+
+        if success:
+            self._logger.info("Transfer done!")
 
         # Let the device know we're done
         if not self._endTransmission():
