@@ -83,22 +83,41 @@ class RootCommand(Command):
             Command not handled
         """
 
-        # Get a logger for everything
-        root = logging.getLogger()
-
         # Scale our logging verbosity according to the 'verbose' argument(s)
-        if args.verbose > 0:
-            level = logging.DEBUG
+        if args.verbose < 1:
+            level = logging.ERROR
+        elif args.verbose < 2:
+            level = logging.WARNING
+        elif args.verbose < 3:
+            level = logging.INFO
         else:
+            level = logging.DEBUG
+
+        # Make a basic logging handler for all loggers
+        #
+        # This provides nice contextualized logging output for most modules.
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt = "%(asctime)s - %(module)s - %(levelname)s -- %(message)s"))
+
+        logger = logging.getLogger()
+        logger.setLevel(level)
+        logger.addHandler(handler)
+
+        # Our commands are always at least at the 'info' level, but can scale to
+        # 'debug' if selected using our argument
+        if level > logging.INFO:
             level = logging.INFO
 
-        # Apply our logging level
-        root.setLevel(level)
-
-        # Make a handler for logging to standard output
+        # Make a separate handler for our commands
+        #
+        # This provides logging output with no context info, which makes our
+        # command output look more like a typical console command.
         handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt = "%(message)s"))
 
-        # Add the handler to our root loggers
-        root.addHandler(handler)
+        logger = logging.getLogger(self.LoggerNamespace)
+        logger.setLevel(level)
+        logger.addHandler(handler)
+        logger.propagate = False
 
         return None
