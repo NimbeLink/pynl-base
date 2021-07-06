@@ -355,6 +355,15 @@ class Xmodem:
                 if start[0] == Xmodem.Packet.Ack:
                     return True
 
+                # If we got a NAK, still return success, but warn about it
+                #
+                # Some products have a bug where a NAK is erroneously sent on
+                # the final EOT indication.
+                if start[0] == Xmodem.Packet.Nak:
+                    self._logger.warning("EOT response was a NAK")
+
+                    return True
+
         # Failed to get ending ACK
         self._logger.error("Failed to get final ACK")
 
