@@ -69,33 +69,6 @@ class Command:
                 return None
 
     @staticmethod
-    def setupLogging() -> None:
-        """Sets up basic logging for commands
-
-        :param none:
-
-        :return none:
-        """
-
-        # Get a logger for everything
-        root = logging.getLogger()
-
-        # If our logger already has handlers set up, don't bother adding our own
-        # -- someone with more context has already set it up, or we've already
-        # configured logging ourselves
-        if root.hasHandlers():
-            return
-
-        # Everything gets 'info'-level logging
-        root.setLevel(logging.INFO)
-
-        # Make a handler for logging to standard output
-        handler = logging.StreamHandler()
-
-        # Add the handler to our root loggers
-        root.addHandler(handler)
-
-    @staticmethod
     def _generateDescription(description: str) -> str:
         """Generates a big string describing this command
 

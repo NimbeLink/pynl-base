@@ -60,9 +60,6 @@ class WestCommand(Command, west.commands.WestCommand):
         :return none:
         """
 
-        # Set up some basic logging for commands
-        Command.setupLogging()
-
         # First pass our arguments to the NimbeLink command base
         Command.__init__(self, *args, **kwargs)
 
