@@ -33,10 +33,6 @@ class Info:
         # Everything is separated by dashes
         fields = string.split("-")
 
-        # If we don't have at least two fields, nothing to grab
-        if len(fields) < 2:
-            raise ValueError(f"Could not parse '{string}' into a version")
-
         # If there is a dirty flag
         if fields[-1] == "dirty":
             # Note it
