@@ -38,16 +38,22 @@ def __getCache() -> diskcache.Cache:
 
     :param none:
 
+    :return None:
+        Failed to get our cache
     :return diskcache.Cache:
         Our cache
     """
 
     # Get this script's directory and use its local __pycache__ to store the
     # file(s)
-    return diskcache.Cache(os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "__pycache__"
-    ))
+    try:
+        return diskcache.Cache(os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "__pycache__"
+        ))
+
+    except Exception:
+        return None
 
 def __loadModules() -> None:
     """Loads our registered modules from our cache
@@ -57,8 +63,13 @@ def __loadModules() -> None:
     :return none:
     """
 
+    cache = __getCache()
+
+    if cache is None:
+        return
+
     # Try to get our modules
-    registeredModules = __getCache().get(key = "modules")
+    registeredModules = cache.get(key = "modules")
 
     # If that worked, make them live
     #
@@ -85,8 +96,13 @@ def register(module: Module) -> None:
     # Append this to our 'live' modules
     __modules__.append(module)
 
+    cache = __getCache()
+
+    if cache is None:
+        return
+
     # Cache our new list of modules
-    __getCache().set(key = "modules", value = __modules__)
+    cache.set(key = "modules", value = __modules__)
 
 def unregister(module: Module) -> None:
     """Unregisters a submodule
@@ -102,8 +118,13 @@ def unregister(module: Module) -> None:
             # Remove this from our 'live' modules
             __modules__.pop(i)
 
+            cache = __getCache()
+
+            if cache is None:
+                break
+
             # Cache our new list of modules
-            __getCache().set(key = "modules", value = __modules__)
+            cache.set(key = "modules", value = __modules__)
 
             break
 
