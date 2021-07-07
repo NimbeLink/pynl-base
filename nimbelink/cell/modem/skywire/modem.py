@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import logging
 import time
 
 import nimbelink.cell.at as at
@@ -58,6 +59,8 @@ class Skywire(object):
         self._socket = socket
 
         self._host = None
+
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     @property
     def app(self) -> App:
