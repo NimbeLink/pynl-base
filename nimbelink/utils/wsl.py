@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import os
 import platform
 import subprocess
 import sys
@@ -51,6 +52,10 @@ class Wsl:
         :return str:
             The converted path
         """
+
+        # If this doesn't have a path to it, ignore it
+        if os.path.basename(path) == path:
+            return path
 
         # Attempt to run 'wslpath' in the path
         try:
