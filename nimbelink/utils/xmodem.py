@@ -217,9 +217,6 @@ class Xmodem:
         # Initialize our packet ID
         self._packetId = Xmodem.Packet.getFirstPacketId()
 
-        # Clear out any previous data in the serial buffers
-        self._clear()
-
         beginTime = time.time()
 
         # Try for 30 seconds to get the starting NAK, discarding single bytes
@@ -401,6 +398,9 @@ class Xmodem:
 
         # Number of bytes from data that we have sent to the modem
         count = 0
+
+        # Clear out any previous data in the serial buffers
+        self._clear()
 
         # If we fail to kick off transmission, that's a paddlin'
         if not self._startTransmission():
