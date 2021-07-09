@@ -12,6 +12,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 import argparse
 import importlib
+import inspect
 import logging
 import sys
 import textwrap
@@ -26,47 +27,6 @@ class Command:
 
     LoggerNamespace = "_commands"
     """The root namespace for command loggers"""
-
-    class SubCommand:
-        """A sub-command for a base command
-        """
-
-        def __init__(self, moduleName: str, className: str) -> None:
-            """Creates a new available sub-command
-
-            :param self:
-                Self
-            :param moduleName:
-                The module the class is found in
-            :param className:
-                The name of the class to import from the module
-
-            :return none:
-            """
-
-            self.moduleName = moduleName
-            self.className = className
-
-        def getClass(self) -> object:
-            """Gets the sub-command's class instance
-
-            :param self:
-                Self
-
-            :return None:
-                Failed to get class instance
-            :return Class:
-                The class instance
-            """
-
-            try:
-                _module = importlib.import_module(self.moduleName)
-                _class = getattr(_module, self.className)
-
-                return _class
-
-            except ImportError:
-                return None
 
     @staticmethod
     def _generateDescription(description: str) -> str:
@@ -161,18 +121,14 @@ class Command:
         name: str,
         help: str,
         description: str = None,
-        subCommands: typing.Union["Command", "Command.SubCommand"] = None,
+        subCommands: typing.List["Command"] = None,
         needUsb: bool = False
     ) -> None:
         """Creates a new command
 
-        Sub-commands can either be instantiated Command objects or they can be
-        deferred Command.SubCommand classes, which will be instantiated during
-        initialization.
-
-        Usage of the Command.SubCommand class can aid in handling cases where
-        not all sub-commands have dependencies met and might not be available,
-        while still allowing the rest of the commands to run normally.
+        Sub-commands can either be pre-instantiated objects, classes that can be
+        default-instantiated (i.e. don't take arguments in __init__), or lambdas
+        that don't have arguments.
 
         :param self:
             Self
@@ -200,24 +156,14 @@ class Command:
         self._help = help
         self._description = Command._generateDescription(description = description)
 
-        self._subCommands = []
+        for i in range(len(subCommands)):
+            # If this is a class or a lambda, make the sub-command
+            #
+            # Otherwise, this must be an object, so use it as-is.
+            if inspect.isclass(subCommands[i]) or inspect.isfunction(subCommands[i]):
+                subCommands[i] = subCommands[i]()
 
-        for subCommand in subCommands:
-            # If this is a deferred Command.SubCommand
-            if isinstance(subCommand, Command.SubCommand):
-                # Get the class
-                subCommandClass = subCommand.getClass()
-
-                # If the class doesn't exist, skip it
-                if subCommandClass is None:
-                    continue
-
-                # It exists, so instantiate and append it
-                self._subCommands.append(subCommandClass())
-
-            # Else, append the already-instantiated object
-            else:
-                self._subCommands.append(subCommand)
+        self._subCommands = subCommands
 
         self._needUsb = needUsb
 
