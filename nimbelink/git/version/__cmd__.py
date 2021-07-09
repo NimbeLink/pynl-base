@@ -54,40 +54,30 @@ class VersionCommand(command.Command):
 
         parser.add_argument(
             "-d", "--directory",
-            dest = "directory",
-            action = "store",
             required = False,
             help = "The directory to get the version of"
         )
 
         parser.add_argument(
             "-b", "--base",
-            dest = "base",
-            action = "store",
             required = False,
             help = "Specify the base ('v.x.y.z') version string manually"
         )
 
         parser.add_argument(
             "-f", "--flavor",
-            dest = "flavor",
-            action = "store",
             required = False,
             help = "Specify the flavor of the version"
         )
 
         parser.add_argument(
             "-s", "--string",
-            dest = "string",
-            action = "store",
             required = False,
             help = "Specify the entire version string manually"
         )
 
         parser.add_argument(
             "-t", "--type",
-            dest = "type",
-            action = "store",
             required = False,
             choices = [
                 "str",
@@ -100,7 +90,6 @@ class VersionCommand(command.Command):
         parser.add_argument(
             "-o", "--output",
             dest = "outputFile",
-            action = "store",
             required = False,
             help = "Output file name; if not provided, stdout used instead"
         )
