@@ -235,6 +235,8 @@ class Xmodem:
 
                 # If we got a NAK return success
                 if start[0] == Xmodem.Packet.Nak:
+                    self._logger.info("Transfer started")
+
                     return True
 
         # Failed to get starting NAK
@@ -276,6 +278,8 @@ class Xmodem:
 
                 # If we got an ACK return success
                 if start[0] == Xmodem.Packet.Ack:
+                    self._logger.info("End of transfer ACKed")
+
                     return True
 
                 # If we got a NAK, still return success, but warn about it
@@ -283,7 +287,7 @@ class Xmodem:
                 # Some products have a bug where a NAK is erroneously sent on
                 # the final EOT indication.
                 if start[0] == Xmodem.Packet.Nak:
-                    self._logger.warning("EOT response was a NAK")
+                    self._logger.warning("End of transfer NAKed")
 
                     return True
 
@@ -417,7 +421,7 @@ class Xmodem:
                 success = True
                 break
 
-            self._logger.debug("Sending bytes %d-%d", count, count + self.packetSize)
+            self._logger.info("Sending bytes %d-%d", count, count + self.packetSize)
 
             # If we fail to send the data, stop
             if not self._sendData(packetData = packetData):
@@ -426,11 +430,13 @@ class Xmodem:
             # Use the next chunk of data
             count += len(packetData)
 
-        if success:
-            self._logger.info("Transfer done!")
+        self._logger.info("Ending transfer...")
 
         # Let the device know we're done
         if not self._endTransmission():
-            return False
+            success = False
+
+        if success:
+            self._logger.info("Transfer done!")
 
         return success
