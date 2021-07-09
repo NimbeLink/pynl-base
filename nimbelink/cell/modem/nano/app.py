@@ -144,10 +144,6 @@ class App(skywire.App):
             if not response:
                 raise modem.AtError(response)
 
-            # Try to give the logging a little time to come across before we
-            # start using the serial port
-            time.sleep(0.5)
-
         # Else, if we have a debug tool, use it
         elif self._nano.tool is not None:
             if not self._nano.tool.mailbox.dfu(autoReboot = reboot):
@@ -156,6 +152,10 @@ class App(skywire.App):
         # Else, no way to do this
         else:
             raise modem.AtError("No debugger nor AT interface to trigger DFU")
+
+        # Try to give the logging a little time to come across before we start
+        # using the serial port
+        time.sleep(1.0)
 
     def _waitForDfuFinish(self, reboot: bool) -> None:
         """Waits for a DFU to finish, including any reboot
