@@ -163,11 +163,36 @@ class Command:
             if inspect.isclass(subCommands[i]) or inspect.isfunction(subCommands[i]):
                 subCommands[i] = subCommands[i]()
 
+                self.__logger.debug(f"Instantiated sub-command '{subCommands[i]._name}'")
+
         self._subCommands = subCommands
 
         self._needUsb = needUsb
 
-        self._logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
+        # Get a logger for logging our own command stuff
+        #
+        # This is distinct from the sans-formatting output a typical command
+        # will generate.
+        #
+        # We'll also isolate our logger from other loggers, since someone might
+        # library debugging output but still not want the boring command
+        # handling logging.
+        self.__logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
+
+        self.stdout = logging.getLogger("nimbelink-commands." + self.__class__.__name__)
+
+        # If we haven't yet, set up command output using a standard 'stream'
+        # logger
+        #
+        # We'll do this check in case someone did a poor job managing their
+        # __init__ chain with their parent class(es).
+        if not self.stdout.hasHandlers():
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter(fmt = "%(message)s"))
+
+            self.stdout.setLevel(logging.DEBUG)
+            self.stdout.addHandler(handler)
+            self.stdout.propagate = False
 
     def parseAndRun(self, args: typing.List[object] = None) -> int:
         """Runs a command with parameters
@@ -234,11 +259,15 @@ class Command:
         try:
             self.addArguments(parser = parser)
 
+            self.__logger.debug("Added self-arguments")
+
         except NotImplementedError:
             pass
 
         # If we don't have sub-commands, nothing else to do
         if len(self._subCommands) < 1:
+            self.__logger.debug("No sub-commands, done with arguments")
+
             return
 
         # Make a sub-parser for our sub-commands
@@ -253,6 +282,8 @@ class Command:
 
         # For each of our command's sub-commands
         for subCommand in self._subCommands:
+            self.__logger.debug(f"Adding sub-command '{subCommand._name}' arguments")
+
             # Add a new parser for this sub-command
             subParser = subCommand._createParser(parser = parser)
 
@@ -275,6 +306,8 @@ class Command:
             return self._runCommand(args = args)
 
         except KeyboardInterrupt as ex:
+            self.__logger.debug("Keyboard interrupt")
+
             # Python seems to use a result of 1 as the keyboard interrupt result
             return 1
 
@@ -293,22 +326,32 @@ class Command:
         # If we will not be compatible with WSL's limited USB functionality and
         # we're running under WSL, elevate to PowerShell
         if self._needUsb and utils.Wsl.isWsl():
+            self.__logger.debug("Command run under WSL but needs USB, elevating to PowerShell")
+
             return utils.Wsl.forward()
 
         try:
             # Always give the base command the chance to run
             try:
+                self.__logger.debug("Running command")
+
                 result = self.runCommand(args)
 
             except NotImplementedError:
+                self.__logger.debug("runCommand not implemented, assuming pass-through")
+
                 result = None
 
             # If there was a result, use it as our final one
             if result is not None:
+                self.__logger.debug(f"Command handled ({result})")
+
                 return result
 
             # If we don't have any sub-commands, assume a successful result
             if len(self._subCommands) < 1:
+                self.__logger.debug("No sub-commands, assuming successful")
+
                 return 0
 
             # Get the name of the sub-command, which we made unique
@@ -319,13 +362,21 @@ class Command:
                 # If this is a matching sub-command, pass our arguments to it
                 # for handling
                 if subCommand._name == subCommandName:
+                    self.__logger.debug(f"Passing downstream to sub-command '{subCommand._name}'")
+
                     return subCommand._runCommand(args = args)
+
+            self.__logger.debug(f"No matching sub-command found for '{subCommandName}'")
 
             # We couldn't find this command somehow -- despite argparse passing
             # along to us -- so just use something as the error
             return 1
 
         except Exception as ex:
+            self.__logger.exception(ex)
+
+            self.__logger.debug("Aborting command")
+
             # Allow handling command issues
             self.abortCommand(args = args, exception = ex)
 

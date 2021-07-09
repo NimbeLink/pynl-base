@@ -47,14 +47,14 @@ class ListCommand(command.Command):
             Always
         """
 
-        self._logger.info("Available Modules:")
+        self.stdout.info("Available Modules:")
 
         for submodule in module.__modules__:
             try:
                 # Try to import the module that may or may not be locally available
                 importlib.import_module(name = submodule.name)
 
-                self._logger.info(f"    '{submodule.name}'")
+                self.stdout.info(f"    '{submodule.name}'")
 
             except ImportError as ex:
                 continue

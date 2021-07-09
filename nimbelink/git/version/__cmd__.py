@@ -123,7 +123,7 @@ class VersionCommand(command.Command):
 
             # If that failed, that's a paddlin'
             if version is None:
-                self._logger.error(f"Failed to make a version from '{args.string}'")
+                self.stdout.error(f"Failed to make a version from '{args.string}'")
                 return 1
 
         # Else, get the current repository version
@@ -133,7 +133,7 @@ class VersionCommand(command.Command):
 
             # If that failed, that's a paddlin'
             if version is None:
-                self._logger.error(f"Failed to make version for '{args.directory}'")
+                self.stdout.error(f"Failed to make version for '{args.directory}'")
                 return 1
 
             # If they specified the base version, use that
