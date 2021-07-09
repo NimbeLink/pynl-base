@@ -64,11 +64,11 @@ class RootCommand(Command):
 
         parser.add_argument(
             "-v", "--verbose",
-            dest = "verbose",
+            dest = "rootVerbose",
             action = "count",
             default = 0,
             required = False,
-            help = "Use verbose output"
+            help = "Use verbose output (1 'warning', 2 'info', 3 'debug', 4 'extra debug')"
         )
 
     def runCommand(self, args: typing.List[object]) -> None:
@@ -84,11 +84,11 @@ class RootCommand(Command):
         """
 
         # Scale our logging verbosity according to the 'verbose' argument(s)
-        if args.verbose < 1:
+        if args.rootVerbose < 1:
             level = logging.ERROR
-        elif args.verbose < 2:
+        elif args.rootVerbose < 2:
             level = logging.WARNING
-        elif args.verbose < 3:
+        elif args.rootVerbose < 3:
             level = logging.INFO
         else:
             level = logging.DEBUG
@@ -103,21 +103,14 @@ class RootCommand(Command):
         logger.setLevel(level)
         logger.addHandler(handler)
 
-        # Our commands are always at least at the 'info' level, but can scale to
-        # 'debug' if selected using our argument
-        if level > logging.INFO:
-            level = logging.INFO
-
-        # Make a separate handler for our commands
-        #
-        # This provides logging output with no context info, which makes our
-        # command output look more like a typical console command.
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(fmt = "%(message)s"))
-
-        logger = logging.getLogger(self.LoggerNamespace)
-        logger.setLevel(level)
+        # Set up logging for our base Command class
+        logger = logging.getLogger(Command.LoggerNamespace)
         logger.addHandler(handler)
         logger.propagate = False
+
+        if args.rootVerbose > 3:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.CRITICAL)
 
         return None

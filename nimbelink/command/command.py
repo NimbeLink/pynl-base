@@ -12,6 +12,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 import argparse
 import importlib
+import inspect
 import logging
 import sys
 import textwrap
@@ -26,47 +27,6 @@ class Command:
 
     LoggerNamespace = "_commands"
     """The root namespace for command loggers"""
-
-    class SubCommand:
-        """A sub-command for a base command
-        """
-
-        def __init__(self, moduleName: str, className: str) -> None:
-            """Creates a new available sub-command
-
-            :param self:
-                Self
-            :param moduleName:
-                The module the class is found in
-            :param className:
-                The name of the class to import from the module
-
-            :return none:
-            """
-
-            self.moduleName = moduleName
-            self.className = className
-
-        def getClass(self) -> object:
-            """Gets the sub-command's class instance
-
-            :param self:
-                Self
-
-            :return None:
-                Failed to get class instance
-            :return Class:
-                The class instance
-            """
-
-            try:
-                _module = importlib.import_module(self.moduleName)
-                _class = getattr(_module, self.className)
-
-                return _class
-
-            except ImportError:
-                return None
 
     @staticmethod
     def _generateDescription(description: str) -> str:
@@ -161,18 +121,14 @@ class Command:
         name: str,
         help: str,
         description: str = None,
-        subCommands: typing.Union["Command", "Command.SubCommand"] = None,
+        subCommands: typing.List["Command"] = None,
         needUsb: bool = False
     ) -> None:
         """Creates a new command
 
-        Sub-commands can either be instantiated Command objects or they can be
-        deferred Command.SubCommand classes, which will be instantiated during
-        initialization.
-
-        Usage of the Command.SubCommand class can aid in handling cases where
-        not all sub-commands have dependencies met and might not be available,
-        while still allowing the rest of the commands to run normally.
+        Sub-commands can either be pre-instantiated objects, classes that can be
+        default-instantiated (i.e. don't take arguments in __init__), or lambdas
+        that don't have arguments.
 
         :param self:
             Self
@@ -200,28 +156,43 @@ class Command:
         self._help = help
         self._description = Command._generateDescription(description = description)
 
-        self._subCommands = []
+        for i in range(len(subCommands)):
+            # If this is a class or a lambda, make the sub-command
+            #
+            # Otherwise, this must be an object, so use it as-is.
+            if inspect.isclass(subCommands[i]) or inspect.isfunction(subCommands[i]):
+                subCommands[i] = subCommands[i]()
 
-        for subCommand in subCommands:
-            # If this is a deferred Command.SubCommand
-            if isinstance(subCommand, Command.SubCommand):
-                # Get the class
-                subCommandClass = subCommand.getClass()
+                self.__logger.debug(f"Instantiated sub-command '{subCommands[i]._name}'")
 
-                # If the class doesn't exist, skip it
-                if subCommandClass is None:
-                    continue
-
-                # It exists, so instantiate and append it
-                self._subCommands.append(subCommandClass())
-
-            # Else, append the already-instantiated object
-            else:
-                self._subCommands.append(subCommand)
+        self._subCommands = subCommands
 
         self._needUsb = needUsb
 
-        self._logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
+        # Get a logger for logging our own command stuff
+        #
+        # This is distinct from the sans-formatting output a typical command
+        # will generate.
+        #
+        # We'll also isolate our logger from other loggers, since someone might
+        # library debugging output but still not want the boring command
+        # handling logging.
+        self.__logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
+
+        self.stdout = logging.getLogger("nimbelink-commands." + self.__class__.__name__)
+
+        # If we haven't yet, set up command output using a standard 'stream'
+        # logger
+        #
+        # We'll do this check in case someone did a poor job managing their
+        # __init__ chain with their parent class(es).
+        if not self.stdout.hasHandlers():
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter(fmt = "%(message)s"))
+
+            self.stdout.setLevel(logging.DEBUG)
+            self.stdout.addHandler(handler)
+            self.stdout.propagate = False
 
     def parseAndRun(self, args: typing.List[object] = None) -> int:
         """Runs a command with parameters
@@ -288,11 +259,15 @@ class Command:
         try:
             self.addArguments(parser = parser)
 
+            self.__logger.debug("Added self-arguments")
+
         except NotImplementedError:
             pass
 
         # If we don't have sub-commands, nothing else to do
         if len(self._subCommands) < 1:
+            self.__logger.debug("No sub-commands, done with arguments")
+
             return
 
         # Make a sub-parser for our sub-commands
@@ -307,6 +282,8 @@ class Command:
 
         # For each of our command's sub-commands
         for subCommand in self._subCommands:
+            self.__logger.debug(f"Adding sub-command '{subCommand._name}' arguments")
+
             # Add a new parser for this sub-command
             subParser = subCommand._createParser(parser = parser)
 
@@ -329,6 +306,8 @@ class Command:
             return self._runCommand(args = args)
 
         except KeyboardInterrupt as ex:
+            self.__logger.debug("Keyboard interrupt")
+
             # Python seems to use a result of 1 as the keyboard interrupt result
             return 1
 
@@ -347,22 +326,32 @@ class Command:
         # If we will not be compatible with WSL's limited USB functionality and
         # we're running under WSL, elevate to PowerShell
         if self._needUsb and utils.Wsl.isWsl():
+            self.__logger.debug("Command run under WSL but needs USB, elevating to PowerShell")
+
             return utils.Wsl.forward()
 
         try:
             # Always give the base command the chance to run
             try:
+                self.__logger.debug("Running command")
+
                 result = self.runCommand(args)
 
             except NotImplementedError:
+                self.__logger.debug("runCommand not implemented, assuming pass-through")
+
                 result = None
 
             # If there was a result, use it as our final one
             if result is not None:
+                self.__logger.debug(f"Command handled ({result})")
+
                 return result
 
             # If we don't have any sub-commands, assume a successful result
             if len(self._subCommands) < 1:
+                self.__logger.debug("No sub-commands, assuming successful")
+
                 return 0
 
             # Get the name of the sub-command, which we made unique
@@ -373,13 +362,21 @@ class Command:
                 # If this is a matching sub-command, pass our arguments to it
                 # for handling
                 if subCommand._name == subCommandName:
+                    self.__logger.debug(f"Passing downstream to sub-command '{subCommand._name}'")
+
                     return subCommand._runCommand(args = args)
+
+            self.__logger.debug(f"No matching sub-command found for '{subCommandName}'")
 
             # We couldn't find this command somehow -- despite argparse passing
             # along to us -- so just use something as the error
             return 1
 
         except Exception as ex:
+            self.__logger.exception(ex)
+
+            self.__logger.debug("Aborting command")
+
             # Allow handling command issues
             self.abortCommand(args = args, exception = ex)
 
