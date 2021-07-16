@@ -204,8 +204,8 @@ class Ahb:
         self._dap.write(self.Port, self.Configs.TransferAddress, address)
 
         for value in values:
-            self._waitReady()
-
+            # The DAP is fast enough to keep up with our writing data, so don't
+            # worry about waiting for it to be ready
             self._dap.write(self.Port, self.Configs.DataReadWrite, value)
 
             address += 4
