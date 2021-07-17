@@ -109,17 +109,23 @@ class WestBackend(Backend):
         :return none:
         """
 
-        pass
+        for name, value in self._getNameValues(data = data["root"]):
+            try:
+                subprocess.check_call(["west", "config", f"{self._rootName}{name}", f"{value}"])
+
+            except subprocess.CalledProcessError:
+                raise OSError(f"Failed to set west configuration '{name}' to '{value}'")
 
     @staticmethod
-    def _getLines(data: dict) -> None:
-        """Generates west configuration-formatted lines for a dictionary
+    def _getNameValues(data: dict) -> None:
+        """Generates west configuration-formatted lines and their values for a
+        dictionary
 
         :param dict:
             The data to format strings for
 
-        :yield str:
-            The next line
+        :yield (str, object):
+            The next configuration name and value
 
         :return none:
         """
@@ -130,13 +136,13 @@ class WestBackend(Backend):
             # to the beginning of the line, and then return that as the next
             # line
             if isinstance(data[key], dict):
-                for line in WestBackend._getLines(data = data[key]):
-                    yield f":{key}{line}"
+                for name, value in WestBackend._getNameValues(data = data[key]):
+                    yield (f":{key}{name}", value)
 
             # Else, this must be an option, so yield our next line using our key
             # and the option's value
             else:
-                yield f".{key}={data[key]}"
+                yield (f".{key}", data[key])
 
     def format(self, data: dict) -> str:
         """Gets a string representation of a dictionary
@@ -152,7 +158,7 @@ class WestBackend(Backend):
 
         lines = []
 
-        for line in WestBackend._getLines(data = data):
-            lines.append(f"{self._rootName}{line}")
+        for name, value in WestBackend._getNameValues(data = data):
+            lines.append(f"{self._rootName}{name}={value}")
 
         return "\n".join(lines)
