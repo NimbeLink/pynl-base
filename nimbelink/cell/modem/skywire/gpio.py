@@ -15,10 +15,22 @@ import typing
 class Gpio:
     """Skywire modem GPIO utilities
 
-    The GPIO class itself presents APIs for using GPIOs via only their pin
-    number. The GPIO class also provides a means for looking up GPIOs either by
-    pin number or by name, thus allowing translation between pin number and
-    name, as well as direct GPIO APIs (i.e. those found in the Pin class below).
+    This sub-module will provide access to a platforms GPIOs. An instance of a
+    GPIO is referred to as a 'pin'.
+
+    Pins can be accessed either by a familiar name or by their 'ID'. The list of
+    available pin names and the meaning of a pin's ID are up to the platform
+    implementing the Gpio sub-module class.
+
+    This sub-module will offer access to all available pins by either their
+    familiar name or their ID:
+
+        modem.gpio[0] ...
+        modem.gpio["mypin"] ...
+
+    Pins can be individually controlled via their APIs. Pins can be controlled
+    in bulk via the GPIO sub-module's APIs. Whether or not bulk operations are
+    atomic is dependent on the platform.
     """
 
     class Config:
@@ -40,13 +52,13 @@ class Gpio:
         passing an API back to the pin's parent Gpio instance.
         """
 
-        def __init__(self, pin: int, name: str = None):
-            """Creates a new pin map
+        def __init__(self, id: int, name: str = None):
+            """Creates a new pin
 
             :param self:
                 Self
-            :param pin:
-                The index of this pin
+            :param id:
+                The ID of this pin
             :param name:
                 The name of this pin
 
@@ -54,10 +66,8 @@ class Gpio:
             """
 
             self.name = name
-            self.pin = pin
+            self.id = id
 
-            # We expect to have our GPIO module filled in for us by our parent
-            # Gpio instance
             self._gpio = None
 
         def setConfig(self, config: "Gpio.Config") -> None:
@@ -71,7 +81,7 @@ class Gpio:
             :return none:
             """
 
-            self._gpio.setConfig(pins = [self.pin], configs = [config])
+            self._gpio.setConfig(pins = [self], configs = [config])
 
         def getConfig(self) -> "Gpio.Config":
             """Gets a GPIO's configuration
@@ -83,7 +93,7 @@ class Gpio:
                 The GPIO's configuration
             """
 
-            return self._gpio.getConfigs(pins = [self.pin])[0]
+            return self._gpio.getConfigs(pins = [self])[0]
 
         def write(self, state: int) -> None:
             """Writes a GPIO's output
@@ -96,7 +106,7 @@ class Gpio:
             :return none:
             """
 
-            self._gpio.write(pins = [self.pin], states = [state])
+            self._gpio.write(pins = [self], states = [state])
 
         def read(self) -> int:
             """Reads a GPIO's state
@@ -108,7 +118,7 @@ class Gpio:
                 The pin's state
             """
 
-            return self._gpio.read(pins = [self.pin])[0]
+            return self._gpio.read(pins = [self])[0]
 
     def __init__(self, pins: typing.List["Gpio.Pin"] = None) -> None:
         """Creates a new GPIO sub-module
@@ -121,11 +131,9 @@ class Gpio:
         :return none:
         """
 
-        if pins == None:
+        if pins is None:
             pins = []
 
-        # We want our incoming pins to be able to reference our APIs for
-        # fulfilling API requests, so fill in their internal gpio member
         for pin in pins:
             pin._gpio = self
 
@@ -143,7 +151,7 @@ class Gpio:
 
         return len(self._pins)
 
-    def __getitem__(self, key: typing.Union[int, str]) -> "Gpio.PinMap":
+    def __getitem__(self, key: typing.Union[int, str]) -> "Gpio.Pin":
         """Gets a pin by name or pin number
 
         :param self:
@@ -151,7 +159,9 @@ class Gpio:
         :param key:
             Which item to get
 
-        :raise IndexError:
+        :raise TypeError:
+            Invalid key type
+        :raise KeyError:
             Failed to find pin
 
         :return Gpio.Pin:
@@ -162,20 +172,94 @@ class Gpio:
             pins = [pin for pin in self._pins if pin.name == key]
 
         elif isinstance(key, int):
-            pins = [pin for pin in self._pins if pin.name == key]
+            pins = [pin for pin in self._pins if pin.id == key]
 
         else:
-            raise TypeError(f"Invalid type {type(key)} for pin mapping access")
+            raise TypeError(f"Invalid type {type(key)} for pin")
 
         if len(pins) < 1:
-            raise KeyError(f"Failed to find {key} in pin maps")
+            raise KeyError(f"Failed to find {key} in pins")
 
         if len(pins) > 1:
-            raise KeyError(f"{key} is ambiguous in pin maps")
+            raise KeyError(f"{key} is ambiguous in pins")
 
         return pins[0]
 
-    def setConfigs(self, pins: typing.List[int], configs: typing.List["Gpio.Config"]) -> None:
+    @staticmethod
+    def _resolvePins(pins: typing.List[typing.Tuple[int, str]]) -> typing.List["Gpio.Pin"]:
+        """Resolves pin references to actual pin objects
+
+        :param pins:
+            The pins to resolve to Gpio.Pin objects
+
+        :raise KeyError:
+            Invalid pin(s)
+
+        :return typing.List[Gpio.Pin]:
+            The resolved pins
+        """
+
+        return [self[pin] for pin in pins]
+
+    def setConfigs(self, pins: typing.List[typing.Tuple[int, str]], configs: typing.List["Gpio.Config"]) -> None:
+        """Configures GPIOs
+
+        :param self:
+            Self
+        :param pins:
+            The pins to configure
+        :param configs:
+            The configurations to use
+
+        :return none:
+        """
+
+        self._setConfigs(pins = self._resolvePins(pins = pins), configs = configs)
+
+    def getConfigs(self, pins: typing.List[typing.Tuple[int, str]]) -> typing.List["Gpio.Config"]:
+        """Gets GPIO configurations
+
+        :param self:
+            Self
+        :param pins:
+            The GPIOs whose configurations to get
+
+        :return List[Gpio.Config]:
+            The GPIO configurations
+        """
+
+        self._getConfigs(pins = self._resolvePins(pins = pins))
+
+    def write(self, pins: typing.List[typing.Tuple[int, str]], states: typing.List[int]) -> None:
+        """Writes GPIO outputs
+
+        :param self:
+            Self
+        :param pins:
+            The pins whose output states to set
+        :param states:
+            The output states to apply
+
+        :return none:
+        """
+
+        self._write(pins = self._resolvePins(pins = pins), states = states)
+
+    def read(self, pins: typing.List[typing.Tuple[int, str]]) -> typing.List[int]:
+        """Reads GPIO states
+
+        :param self:
+            Self
+        :param pins:
+            The pins whose states to read
+
+        :param List[int]:
+            The pin states
+        """
+
+        return self._read(pins = self._resolvePins(pins = pins))
+
+    def _setConfigs(self, pins: typing.List["Gpio.Pin"], configs: typing.List["Gpio.Config"]) -> None:
         """Configures GPIOs
 
         :param self:
@@ -190,7 +274,7 @@ class Gpio:
 
         raise NotImplementedError(f"setConfigs() not implemented by {self.__class__.__name__}")
 
-    def getConfigs(self, pins: typing.List[int]) -> typing.List["Gpio.Config"]:
+    def _getConfigs(self, pins: typing.List["Gpio.Pin"]) -> typing.List["Gpio.Config"]:
         """Gets GPIO configurations
 
         :param self:
@@ -204,7 +288,7 @@ class Gpio:
 
         raise NotImplementedError(f"getConfigs() not implemented by {self.__class__.__name__}")
 
-    def write(self, pins: typing.List[int], states: typing.List[int]) -> None:
+    def _write(self, pins: typing.List["Gpio.Pin"], states: typing.List[int]) -> None:
         """Writes GPIO outputs
 
         :param self:
@@ -219,7 +303,7 @@ class Gpio:
 
         raise NotImplementedError(f"write() not implemented by {self.__class__.__name__}")
 
-    def read(self, pins: typing.List[int]) -> typing.List[int]:
+    def _read(self, pins: typing.List["Gpio.Pin"]) -> typing.List[int]:
         """Reads GPIO states
 
         :param self:

@@ -15,11 +15,12 @@ import serial
 import nimbelink.cell.at as at
 import nimbelink.cell.modem as modem
 import nimbelink.cell.modem.skywire as skywire
+import nimbelink.debugger as debugger
 
-from nimbelink.cell.modem.nano.app import App
-from nimbelink.cell.modem.nano.gpio import Gpio
-from nimbelink.cell.modem.nano.sim import Sim
-from nimbelink.cell.modem.nano.socket import Socket
+from .app import App
+from .gpio import Gpio
+from .sim import Sim
+from .socket import Socket
 
 class SkywireNano(skywire.Skywire):
     """A Skywire modem
@@ -28,14 +29,19 @@ class SkywireNano(skywire.Skywire):
     def __init__(
         self,
         interface: at.Interface,
-        kernelLogDevice: serial.Serial = None
+        kernelLog: serial.Serial = None,
+        tool: debugger.Tool = None
     ) -> None:
         """Creates a new Skywire Nano modem
 
         :param self:
             Self
-        :param kernelLogDevice:
+        :param interface:
+            Our AT interface
+        :param kernelLog:
             A serial port for our kernel logging output
+        :param tool:
+            A debug tool
 
         :return none:
         """
@@ -48,20 +54,8 @@ class SkywireNano(skywire.Skywire):
             socket = Socket(self)
         )
 
-        self._kernelLogDevice = kernelLogDevice
-
-    @property
-    def kernel(self) -> serial.Serial:
-        """Gets the kernel logging device
-
-        :param self:
-            Self
-
-        :return serial.Serial:
-            The device connected to the modem's kernel log
-        """
-
-        return self._kernelLogDevice
+        self.kernelLog = kernelLog
+        self.tool = tool
 
     def waitForBoot(self, timeout = None):
         """Waits for the Skywire Nano to boot

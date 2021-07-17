@@ -343,7 +343,7 @@ class Flash:
             for chunk in chunks:
                 logging.getLogger(__name__).info("Writing {} to flash @ {:08X}".format(len(chunk.data), chunk.start))
 
-                ahb.dap.api.write(chunk.start, chunk.data, True)
+                ahb._dap.api.write(chunk.start, chunk.data, True)
 
             return
 

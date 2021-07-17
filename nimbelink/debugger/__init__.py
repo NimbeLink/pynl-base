@@ -16,10 +16,14 @@ from .dap import Dap
 from .mailbox import Mailbox
 from .uicr import Uicr
 
+from .tool import Tool
+
 __all__ = [
     "Ahb",
     "CtrlAp",
     "Dap",
     "Mailbox",
-    "Uicr"
+    "Uicr",
+
+    "Tool"
 ]

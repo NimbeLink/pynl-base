@@ -38,24 +38,20 @@ class Kconfig:
 
         with open(fileName, "r") as file:
             for line in file.readlines():
-                # If this is a comment, skip it
-                if line.startswith("#"):
+                # If this configuration's name doesn't start with our prefix,
+                # skip it
+                if not line.startswith(Kconfig.NamePrefix):
                     continue
 
                 # Get rid of the line ending
                 line = line.rstrip()
 
-                # If this is an empty line, skip it
-                if len(line) < 1:
-                    continue
-
                 # Get the name of the configuration and its value
                 fields = line.split("=")
 
-                # If we couldn't unpack the two fields; or this configuration's
-                # name somehow doesn't start with our prefix, this is an invalid
-                # Kconfig file
-                if (len(fields) < 2) or not line.startswith(Kconfig.NamePrefix):
+                # If we couldn't unpack the fields, this is an invalid Kconfig
+                # file
+                if len(fields) < 2:
                     raise TypeError(f"Invalid Kconfig line '{line}' in '{fileName}'")
 
                 # It's possible the value of this configuration has a '=' in it,

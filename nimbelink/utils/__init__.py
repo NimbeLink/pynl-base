@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+from .devicetree import Devicetree
 from .flash import Flash
 from .kconfig import Kconfig
 from .west import West
@@ -17,6 +18,7 @@ from .wsl import Wsl
 from .xmodem import Xmodem
 
 __all__ = [
+    "Devicetree",
     "Flash",
     "Kconfig",
     "West",

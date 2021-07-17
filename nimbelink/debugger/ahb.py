@@ -29,20 +29,18 @@ class Ahb:
         TransferAddress     = 0x04
         DataReadWrite       = 0x0C
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, dap: Dap) -> None:
         """Creates a new AHB-AP
 
         :param self:
             Self
-        :param *args:
-            Positional arguments
-        :param **kwargs:
-            Keyword arguments
+        :param dap:
+            The DAP to use
 
         :return none:
         """
 
-        self.dap = Dap(*args, **kwargs)
+        self._dap = dap
 
         # Assume we're Secure by default
         self.secure = True
@@ -91,7 +89,7 @@ class Ahb:
             Failed to configure
         """
 
-        currentValue = self.dap.read(self.Port, self.Configs.ControlStatus)
+        currentValue = self._dap.read(self.Port, self.Configs.ControlStatus)
 
         newValue = currentValue
 
@@ -131,7 +129,7 @@ class Ahb:
             return True
 
         # Set the configuration
-        self.dap.write(self.Port, self.Configs.ControlStatus, newValue)
+        self._dap.write(self.Port, self.Configs.ControlStatus, newValue)
 
         return True
 
@@ -146,7 +144,7 @@ class Ahb:
 
         while True:
             try:
-                status = self.dap.read(self.Port, self.Configs.ControlStatus)
+                status = self._dap.read(self.Port, self.Configs.ControlStatus)
 
                 if (status & (1 << 7)) != 1:
                     break
@@ -171,7 +169,7 @@ class Ahb:
         self._setDefaultConfig()
 
         # Set the starting address we'll read from as our target
-        self.dap.write(self.Port, self.Configs.TransferAddress, address)
+        self._dap.write(self.Port, self.Configs.TransferAddress, address)
 
         values = []
 
@@ -179,7 +177,7 @@ class Ahb:
         for i in range(length):
             self._waitReady()
 
-            values.append(self.dap.read(self.Port, self.Configs.DataReadWrite))
+            values.append(self._dap.read(self.Port, self.Configs.DataReadWrite))
 
         return values
 
@@ -203,12 +201,12 @@ class Ahb:
         self._setDefaultConfig()
 
         # Set the starting address we'll write to as our target
-        self.dap.write(self.Port, self.Configs.TransferAddress, address)
+        self._dap.write(self.Port, self.Configs.TransferAddress, address)
 
         for value in values:
-            self._waitReady()
-
-            self.dap.write(self.Port, self.Configs.DataReadWrite, value)
+            # The DAP is fast enough to keep up with our writing data, so don't
+            # worry about waiting for it to be ready
+            self._dap.write(self.Port, self.Configs.DataReadWrite, value)
 
             address += 4
 
@@ -216,12 +214,12 @@ class Ahb:
             # 1024 bytes, meaning we'll need to manually bump the address past
             # that boundary whenever the data rolls past it
             if (address % 1024) == 0:
-                self.dap.write(self.Port, self.Configs.TransferAddress, address)
+                self._dap.write(self.Port, self.Configs.TransferAddress, address)
 
         # If they need a flush, do something simple
         if flush:
             self._waitReady()
 
-            self.dap.write(self.Port, self.Configs.TransferAddress, address)
+            self._dap.write(self.Port, self.Configs.TransferAddress, address)
 
         return True
