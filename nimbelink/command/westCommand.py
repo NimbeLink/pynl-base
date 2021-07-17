@@ -14,13 +14,23 @@ import argparse
 import os
 import sys
 import typing
-import west.commands
+
+# Try to import the west commands normally
+try:
+    from west.commands import WestCommand as WestCommandBase
+
+# If this system doesn't have 'west' installed, just make our west-compatible
+# commands essentially be normal NimbeLink commands
+except ImportError:
+    class WestCommandBase:
+        def __init__(self, *args, **kwargs):
+            pass
 
 import nimbelink.config as config
 
 from .command import Command
 
-class WestCommand(Command, west.commands.WestCommand):
+class WestCommand(Command, WestCommandBase):
     """A command that can be used by the 'west' system
     """
 
@@ -64,7 +74,7 @@ class WestCommand(Command, west.commands.WestCommand):
         Command.__init__(self, *args, **kwargs)
 
         # Next set up our west command
-        west.commands.WestCommand.__init__(
+        WestCommandBase.__init__(
             self,
             name = self._name,
             help = self._help,
