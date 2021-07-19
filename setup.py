@@ -24,6 +24,7 @@ setup(
     },
     install_requires = [
         "diskcache",
+        "pynrfjprog",
         "pyserial>=3.4",
         "PyYAML>=5.3",
         "requests",
