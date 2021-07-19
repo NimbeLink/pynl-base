@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+*.log
+*.zip
+*.swp
+.vscode
+/.vs
+/SkywireUnittests/logs
+/ENV
+/reports
+*socket.txt
