@@ -14,7 +14,6 @@ from .config import Config
 from .option import Option
 
 from .backend import Backend
-from .west import WestBackend
 from .yaml import YamlBackend
 
 __all__ = [
@@ -23,5 +22,12 @@ __all__ = [
 
     "Backend",
     "YamlBackend",
-    "WestBackend"
 ]
+
+# The West backend is only available if the local system has the 'west' package
+# installed, which we don't require
+try:
+    from .west import WestBackend
+    __all__.append("WestBackend")
+except ImportError:
+    pass
