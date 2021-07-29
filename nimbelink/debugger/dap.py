@@ -53,7 +53,8 @@ class Dap:
         :return none:
         """
 
-        self.api.close()
+        if hasattr(self, "api"):
+            self.api.close()
 
     def read(self, port: int, register: int) -> int:
         """Reads from an address in an access port
