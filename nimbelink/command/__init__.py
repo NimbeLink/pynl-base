@@ -17,7 +17,10 @@ from .rootCommand import RootCommand
 
 __all__ = [
     "Command",
-    "RootCommand"
+    "RootCommand",
+
+    "register",
+    "run"
 ]
 
 # West commands are only available if the local system has the 'west' package
