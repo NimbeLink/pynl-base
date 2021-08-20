@@ -51,6 +51,31 @@ class RootCommand(Command):
     MyCommand-specific actions to take.
     """
 
+    def __init__(self, *args: typing.List[object], **kwargs: dict) -> None:
+        """Creates a new 'root' command
+
+        :param self:
+            Self
+        :param *args:
+            Our positional arguments
+        :param **kwargs:
+            Our keyword arguments
+
+        :return none:
+        """
+
+        super().__init__(*args, **kwargs)
+
+        # Assume we'll need logging setup, knowing that if we're a sub-command
+        # to a parent 'root' command that they'll change this for us
+        self._setupLogging = True
+
+        # Set all of our 'root' sub-commands to not initialize logging on their
+        # own
+        for subCommand in self._subCommands:
+            if isinstance(subCommand, RootCommand):
+                subCommand._setupLogging = False
+
     def addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds arguments for our command
 
@@ -61,6 +86,10 @@ class RootCommand(Command):
 
         :return none:
         """
+
+        # If one of our parents is handling 'root' logging setup, skip it
+        if not self._setupLogging:
+            return
 
         parser.add_argument(
             "-v", "--verbose",
@@ -82,6 +111,10 @@ class RootCommand(Command):
         :return None:
             Command not handled
         """
+
+        # If one of our parents is handling 'root' logging setup, skip it
+        if not self._setupLogging:
+            return None
 
         # Scale our logging verbosity according to the 'verbose' argument(s)
         if args.rootVerbose < 1:
