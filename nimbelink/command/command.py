@@ -156,14 +156,22 @@ class Command:
         self._help = help
         self._description = Command._generateDescription(description = description)
 
+        # Assume we're the 'root' command
+        self._isRoot = True
+
         for i in range(len(subCommands)):
             # If this is a class or a lambda, make the sub-command
             #
-            # Otherwise, this must be an object, so use it as-is.
+            # Otherwise, this must be an already-instantiated object, so
+            # obviously don't re-instantiate it.
             if inspect.isclass(subCommands[i]) or inspect.isfunction(subCommands[i]):
                 subCommands[i] = subCommands[i]()
 
                 self.__logger.debug(f"Instantiated sub-command '{subCommands[i]._name}'")
+
+            # None of our sub-commands can be a 'root' command, since they're
+            # under us
+            subCommands[i]._isRoot = False
 
         self._subCommands = subCommands
 
@@ -278,6 +286,17 @@ class Command:
         :return none:
         """
 
+        # If we're the 'root' command, add some top-level stuff
+        if self._isRoot:
+            parser.add_argument(
+                "-v", "--verbose",
+                dest = "rootVerbose",
+                action = "count",
+                default = 0,
+                required = False,
+                help = "Use verbose output (1 'warning', 2 'info', 3 'debug', 4 'extra debug')"
+            )
+
         # First add this command's arguments
         try:
             self.addArguments(parser = parser)
@@ -324,6 +343,38 @@ class Command:
         :return int:
             Our result
         """
+
+        # If we're the 'root' command, handle the top-level stuff
+        if self._isRoot:
+            # Scale our logging verbosity according to the 'verbose' argument(s)
+            if args.rootVerbose < 1:
+                level = logging.ERROR
+            elif args.rootVerbose < 2:
+                level = logging.WARNING
+            elif args.rootVerbose < 3:
+                level = logging.INFO
+            else:
+                level = logging.DEBUG
+
+            # Make a basic logging handler for all loggers
+            #
+            # This provides nice contextualized logging output for most modules.
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter(fmt = "%(asctime)s - %(module)s - %(levelname)s -- %(message)s"))
+
+            logger = logging.getLogger()
+            logger.setLevel(level)
+            logger.addHandler(handler)
+
+            # Set up logging for our base Command class
+            logger = logging.getLogger(Command.LoggerNamespace)
+            logger.addHandler(handler)
+            logger.propagate = False
+
+            if args.rootVerbose > 3:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel(logging.CRITICAL)
 
         try:
             return self._runCommand(args = args)
