@@ -297,6 +297,20 @@ class Command:
                 help = "Use verbose output (1 'warning', 2 'info', 3 'debug', 4 'extra debug')"
             )
 
+            if utils.Wsl.isWsl():
+                help = "Force keeping operation inside WSL, even if using USB"
+            else:
+                help = argparse.SUPPRESS
+
+            parser.add_argument(
+                "-w", "--force-wsl",
+                dest = "forceWsl",
+                action = "count",
+                default = 0,
+                required = False,
+                help = help
+            )
+
         # First add this command's arguments
         try:
             self.addArguments(parser = parser)
@@ -397,9 +411,10 @@ class Command:
             Our result
         """
 
-        # If we will not be compatible with WSL's limited USB functionality and
-        # we're running under WSL, elevate to PowerShell
-        if self._needUsb and utils.Wsl.isWsl():
+        # If we will not be compatible with WSL's limited USB functionality,
+        # we're running under WSL, and we're allowed to do so, elevate to
+        # PowerShell
+        if self._needUsb and utils.Wsl.isWsl() and not args.forceWsl:
             self.__logger.debug("Command run under WSL but needs USB, elevating to PowerShell")
 
             return utils.Wsl.forward()
