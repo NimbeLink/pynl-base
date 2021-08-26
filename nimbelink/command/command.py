@@ -194,6 +194,29 @@ class Command:
             self.stdout.addHandler(handler)
             self.stdout.propagate = False
 
+    @property
+    def _allSubCommands(self) -> "Command":
+        """Gets all downstream sub-commands
+
+        This will also result in sub-commands of sub-commands being returned.
+
+        :param self:
+            Self
+
+        :yield Command:
+            The next sub-command
+
+        :return none:
+        """
+
+        for subCommand in self._subCommands:
+            # First yield the sub-command itself
+            yield subCommand
+
+            # Next yield all of the sub-command's sub-commands
+            for subSubCommand in subCommand._allSubCommands:
+                yield subSubCommand
+
     def parseAndRun(self, args: typing.List[object] = None) -> int:
         """Runs a command with parameters
 
