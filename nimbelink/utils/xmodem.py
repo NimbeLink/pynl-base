@@ -406,6 +406,47 @@ class Xmodem:
 
         return False
 
+    def _finishDroppedPacket(self) -> bool:
+        """Attempts to finish a partially-dropped packet
+
+        :param self:
+            Self
+
+        :return True:
+            Packet finished
+        :return False:
+            Failed to finish packet
+        """
+
+        self._logger.debug("Attempting to finish partial packet")
+
+        # Try to send enough bytes for an entire packet, hoping it finishes the
+        # current packet
+        #
+        # Note that we're not sending the start of packet byte, so any XMODEM
+        # handling on the device side should be discarding any bytes we send
+        # past the bytes that finish off the packet.
+        sent = self._sendData(data = bytearray([0xFF] * Xmodem.Packet.TransferSizes[-1]))
+
+        # If that failed, that's a paddlin'
+        if not sent:
+            self._logger.error("Failed to send finishing data")
+
+            return False
+
+        # Wait for a response to that
+        response = self._getResponse(timeout = self.packetTimeout / 2)
+
+        # If the modem NAKed (or, somehow, ACKed) the packet, move on
+        if response in Xmodem.Packet.Responses:
+            self._logger.debug("Finished partial packet")
+
+            return True
+
+        self._logger.error("Failed to finish partial packet")
+
+        return False
+
     def _sendPacket(self, packetData: bytearray) -> int:
         """Sends a packet to a device
 
@@ -440,7 +481,11 @@ class Xmodem:
                 return False
 
             # Wait for a response
-            response = self._getResponse(timeout = self.packetTimeout)
+            #
+            # Note that we're only using half of our allotted time, as we want
+            # to make sure we can recover from a packet being accidentally
+            # dropped.
+            response = self._getResponse(timeout = self.packetTimeout / 2)
 
             # If the modem ACKed the packet, move on
             if response == Xmodem.Packet.Ack:
@@ -452,6 +497,18 @@ class Xmodem:
             # If the modem NAKed the packet, try again
             if response == Xmodem.Packet.Nak:
                 self._logger.warning("Packet NAKed, retrying")
+
+                continue
+
+            # If we got garbage, abort
+            if response is not None:
+                self._logger.warning("Packet interrupted")
+
+                return False
+
+            # Try to finish a partially dropped packet
+            if self._finishDroppedPacket():
+                self._logger.warning("Packet had dropped bytes, retrying")
 
                 continue
 
