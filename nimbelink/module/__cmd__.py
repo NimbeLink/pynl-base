@@ -18,11 +18,11 @@ import nimbelink.command as command
 import nimbelink.module as module
 
 class ListCommand(command.Command):
-    """A command for listing NimbeLink-provided packages
+    """A command for listing NimbeLink packages
     """
 
     def __init__(self) -> None:
-        """Creates a new NimbeLink command
+        """Creates a new list command
 
         :param self:
             Self
@@ -54,17 +54,17 @@ class ListCommand(command.Command):
                 # Try to import the module that may or may not be locally available
                 importlib.import_module(name = submodule.name)
 
-                self.stdout.info(f"    '{submodule.name}'")
+                self.stdout.info(f"    '{submodule.name}' (alias '{submodule.alias}')")
 
             except ImportError as ex:
                 continue
 
 class ModuleCommand(command.Command):
-    """A command for managing NimbeLink-provided packages
+    """A command for managing NimbeLink packages
     """
 
     def __init__(self) -> None:
-        """Creates a new NimbeLink command
+        """Creates a new module command
 
         :param self:
             Self
