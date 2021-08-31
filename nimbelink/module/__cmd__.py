@@ -59,6 +59,129 @@ class ListCommand(command.Command):
             except ImportError as ex:
                 continue
 
+class RegisterCommand(command.Command):
+    """A command for registering a NimbeLink package
+    """
+
+    def __init__(self) -> None:
+        """Creates a new register command
+
+        :param self:
+            Self
+
+        :return none:
+        """
+
+        super().__init__(
+            name = "register",
+            help = "registers a NimbeLink Python package"
+        )
+
+    def addArguments(self, parser: argparse.ArgumentParser) -> None:
+        """Adds our arguments
+
+        :param self:
+            Self
+        :param parser:
+            The parser to add arguments to
+
+        :return none:
+        """
+
+        parser.add_argument(
+            "-a", "--alias",
+            help = "The name for the module when made available within the 'nimbelink' package"
+        )
+
+        parser.add_argument(
+            "-p", "--package",
+            help = "The standalone name of the package"
+        )
+
+    def runCommand(self, args: typing.List[object]) -> int:
+        """Runs the command
+
+        :param self:
+            Self
+        :param args:
+            Our arguments
+
+        :return int:
+            Our result
+        """
+
+        submodule = module.Module(name = args.package, alias = args.alias)
+
+        module.register(submodule)
+
+        self.stdout.info(f"Registered package '{submodule.name}' (alias '{submodule.alias}')")
+
+        return 0
+
+class UnregisterCommand(command.Command):
+    """A command for unregistering a NimbeLink package
+    """
+
+    def __init__(self) -> None:
+        """Creates a new unregister command
+
+        :param self:
+            Self
+
+        :return none:
+        """
+
+        super().__init__(
+            name = "unregister",
+            help = "unregisters a NimbeLink Python package"
+        )
+
+    def addArguments(self, parser: argparse.ArgumentParser) -> None:
+        """Adds our arguments
+
+        :param self:
+            Self
+        :param parser:
+            The parser to add arguments to
+
+        :return none:
+        """
+
+        parser.add_argument(
+            "-a", "--alias",
+            help = "The name for the module when made available within the 'nimbelink' package"
+        )
+
+        parser.add_argument(
+            "-p", "--package",
+            help = "The standalone name of the package"
+        )
+
+    def runCommand(self, args: typing.List[object]) -> int:
+        """Runs the command
+
+        :param self:
+            Self
+        :param args:
+            Our arguments
+
+        :return int:
+            Our result
+        """
+
+        submodule = module.Module(name = args.package, alias = args.alias)
+
+        if submodule not in module.__modules__:
+            self.stdout.error(f"Failed to find package '{submodule.name}'")
+
+            return 1
+
+        module.unregister(submodule)
+
+        self.stdout.info(f"Unregistered package '{submodule.name}' (alias '{submodule.alias}')")
+
+        return 0
+
 class ModuleCommand(command.Command):
     """A command for managing NimbeLink packages
     """
@@ -78,5 +201,9 @@ class ModuleCommand(command.Command):
             description =
                 """Handles NimbeLink Python packages
                 """,
-            subCommands = [ListCommand()]
+            subCommands = [
+                ListCommand(),
+                RegisterCommand(),
+                UnregisterCommand()
+            ]
         )
