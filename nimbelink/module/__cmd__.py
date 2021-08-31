@@ -73,7 +73,7 @@ class ModuleCommand(command.Command):
         """
 
         super().__init__(
-            name = "mod",
+            name = "module",
             help = "provides NimbeLink Python package functionality",
             description =
                 """Handles NimbeLink Python packages
