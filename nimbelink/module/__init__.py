@@ -47,10 +47,7 @@ def __getCache() -> diskcache.Cache:
     # Get this script's directory and use its local __pycache__ to store the
     # file(s)
     try:
-        return diskcache.Cache(os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "__pycache__"
-        ))
+        return diskcache.Cache(os.path.join(os.path.expanduser("~"), ".nlcache"))
 
     except Exception:
         return None
