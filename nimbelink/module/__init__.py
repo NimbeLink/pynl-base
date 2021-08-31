@@ -10,6 +10,9 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import diskcache
+import os
+
 from .module import Module
 
 __all__ = [
@@ -29,9 +32,6 @@ Any modules from different packages that wish to be available under the
 'nimbelink' package namespace can register their instantiated
 nimbelink.modules.Module object to this list.
 """
-
-import diskcache
-import os
 
 def __getCache() -> diskcache.Cache:
     """Gets our local diskcache
@@ -54,6 +54,21 @@ def __getCache() -> diskcache.Cache:
 
     except Exception:
         return None
+
+def __cacheModules() -> None:
+    """Caches our module list
+
+    :param none:
+
+    :return none:
+    """
+
+    cache = __getCache()
+
+    if cache is None:
+        return
+
+    cache.set(key = "modules", value = __modules__)
 
 def __loadModules() -> None:
     """Loads our registered modules from our cache
@@ -96,13 +111,8 @@ def register(module: Module) -> None:
     # Append this to our 'live' modules
     __modules__.append(module)
 
-    cache = __getCache()
-
-    if cache is None:
-        return
-
-    # Cache our new list of modules
-    cache.set(key = "modules", value = __modules__)
+    # Update our cache
+    __cacheModules()
 
 def unregister(module: Module) -> None:
     """Unregisters a submodule
@@ -118,13 +128,8 @@ def unregister(module: Module) -> None:
             # Remove this from our 'live' modules
             __modules__.pop(i)
 
-            cache = __getCache()
-
-            if cache is None:
-                break
-
-            # Cache our new list of modules
-            cache.set(key = "modules", value = __modules__)
+            # Update our cache
+            __cacheModules()
 
             break
 
