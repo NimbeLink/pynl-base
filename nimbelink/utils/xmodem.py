@@ -13,6 +13,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import logging
 import serial
 import time
+import typing
 
 class Xmodem:
     """An XMODEM interface
@@ -42,6 +43,15 @@ class Xmodem:
 
         Nak = 0x15
         """A packet no-acknowledgement bytes value"""
+
+        Cancelled = 0x18
+        """A cancellation of transmission byte value"""
+
+        Responses = [
+            Ack,
+            Nak,
+        ]
+        """Our valid response values"""
 
         @classmethod
         def getInversePacketId(cls, packetId: int) -> int:
@@ -168,7 +178,7 @@ class Xmodem:
         # Set some default XMODEM timeouts
         self.startTimeout = 30.0
         self.stopTimeout = 30.0
-        self.packetTimeout = None
+        self.packetTimeout = 2.0
 
     def _logData(self, data: bytearray, output: bool) -> None:
         """Logs data
@@ -202,6 +212,125 @@ class Xmodem:
             self._device.reset_output_buffer()
             self._device.reset_input_buffer()
 
+    def _sendData(self, data: bytearray) -> bool:
+        """Sends XMODEM data
+
+        :param self:
+            Self
+        :param data:
+            The data to send
+
+        :return True:
+            Data sent
+        :return False:
+            Failed to send data
+        """
+
+        # Note how much data we have to send
+        dataLength = len(data)
+
+        # If we aren't using flow control, chunk the data
+        if not self._device.rtscts:
+            self._logger.debug("No flow control, chunking data")
+
+            writeLength = 0
+
+            while True:
+                # If we're out of data to chunk, move on
+                if len(data) < 1:
+                    break
+
+                # Get our next chunk
+                nextData = data[0:Xmodem.ChunkSize]
+
+                # Drop the data we are sending
+                data = data[Xmodem.ChunkSize:]
+
+                # Log the data
+                self._logData(data = nextData, output = True)
+
+                # Wait a bit for the device to handle any previous
+                # operations/data
+                time.sleep(0.1)
+
+                # Write the next chunk
+                writeLength += self._device.write(nextData)
+
+        # Else, just spit everything out
+        else:
+            # Log the data
+            self._logData(data = data, output = True)
+
+            writeLength = self._device.write(data)
+
+        # If that failed, that's a paddlin'
+        if writeLength != dataLength:
+            self._logger.error("Failed to send all bytes (%d/%d)", writeLength, dataLength)
+
+            return False
+
+        # Data sent successfully
+        return True
+
+    def _getResponse(self, timeout: float, dropGarbage: bool = False) -> typing.Union[int, None]:
+        """Gets a single-byte XMODEM response
+
+        :param self:
+            Self
+        :param timeout:
+            How long to wait for the response
+        :param dropGarbage:
+            Whether or not to gracefully drop garbage and keep waiting
+
+        :return int:
+            The response byte
+        :return None:
+            Failed to get a response
+        """
+
+        # If we have one, update the read timeout so we wait the proper amount
+        # of time for a packet response
+        if timeout is not None:
+            self._device.timeout = timeout
+
+        # We'll also manually keep track of time to avoid issues with the
+        # pyserial timeout handling
+        start = time.time()
+
+        while True:
+            # If we've got a time limit and we've gone over, abort
+            if (timeout is not None) and ((time.time() - start) >= timeout):
+                self._logger.error("Failed to get response")
+
+                return None
+
+            # Try reading another byte
+            response = self._device.read(1)
+
+            # If that failed, keep waiting
+            if (response is None) or (len(response) < 1):
+                continue
+
+            # Log the response
+            self._logData(data = response, output = False)
+
+            # If this is a valid response, use it
+            if response[0] in Xmodem.Packet.Responses:
+                return response[0]
+
+            # If we are allowed to gracefully drop garbage, do so and keep
+            # waiting for a proper response
+            if dropGarbage:
+                self._logger.debug("Got invalid response value, trying again")
+
+                continue
+
+            self._logger.warning("Got invalid response value, assuming transmission aborted early")
+
+            # We didn't get a valid response, but we're not allowed to
+            # gracefully drop it, so use it
+            return response[0]
+
     def _startTransmission(self) -> bool:
         """Starts XMODEM transmission
 
@@ -217,26 +346,18 @@ class Xmodem:
         # Initialize our packet ID
         self._packetId = Xmodem.Packet.getFirstPacketId()
 
-        beginTime = time.time()
+        # Try to get our initial NAK
+        #
+        # Allow dropping garbage in case any logging is left over from before
+        # XMODEM kicked off.
+        response = self._getResponse(timeout = self.startTimeout, dropGarbage = True)
 
-        # Try for 30 seconds to get the starting NAK, discarding single bytes
-        # until we timeout or get a NAK
-        while (time.time() - beginTime) < self.startTimeout:
-            # Try reading a single byte from the serial device
-            start = self._device.read(1)
+        # If we got it, great
+        if response == Xmodem.Packet.Nak:
+            self._logger.info("Transfer started")
 
-            # Make sure we didn't timeout
-            if start:
-                # Log the byte
-                self._logData(data = start, output = False)
+            return True
 
-                # If we got a NAK return success
-                if start[0] == Xmodem.Packet.Nak:
-                    self._logger.info("Transfer started")
-
-                    return True
-
-        # Failed to get starting NAK
         self._logger.error("Failed to get starting NAK")
 
         return False
@@ -253,47 +374,39 @@ class Xmodem:
             Ending transmission failed
         """
 
-        stopData = bytearray([Xmodem.Packet.EndOfTransmission])
+        # Send our indication of transmission ending
+        sent = self._sendData(bytearray([Xmodem.Packet.EndOfTransmission]))
 
-        self._logData(data = stopData, output = True)
+        # If that failed, abort
+        if not sent:
+            self._logger.error("Failed to send end of transmission")
 
-        # Stop transmission
-        self._device.write(stopData)
+            return False
 
-        beginTime = time.time()
+        # Try to get our final ACK/NAK
+        response = self._getResponse(timeout = self.stopTimeout)
 
-        # Try for 30 seconds to get the last NAK, discarding single bytes until
-        # we timeout or get a NAK
-        while (time.time() - beginTime) < self.stopTimeout:
-            # Try reading a single byte from the serial device
-            start = self._device.read(1)
+        # If we got an ACK, great
+        if response == Xmodem.Packet.Ack:
+            self._logger.info("End of transfer ACKed")
 
-            # Make sure we didn't timeout
-            if start:
-                # Log the byte
-                self._logData(data = start, output = False)
+            return True
 
-                # If we got an ACK return success
-                if start[0] == Xmodem.Packet.Ack:
-                    self._logger.info("End of transfer ACKed")
+        # If we got a NAK, still call it a success, but warn about it
+        #
+        # Some products have a bug where a NAK is erroneously sent on the final
+        # EOT indication.
+        if response == Xmodem.Packet.Nak:
+            self._logger.warning("End of transfer NAKed")
 
-                    return True
-
-                # If we got a NAK, still return success, but warn about it
-                #
-                # Some products have a bug where a NAK is erroneously sent on
-                # the final EOT indication.
-                if start[0] == Xmodem.Packet.Nak:
-                    self._logger.warning("End of transfer NAKed")
-
-                    return True
+            return True
 
         # Failed to get ending ACK
         self._logger.error("Failed to get final ACK")
 
         return False
 
-    def _sendData(self, packetData: bytearray) -> int:
+    def _sendPacket(self, packetData: bytearray) -> int:
         """Sends a packet to a device
 
         :param self:
@@ -307,11 +420,6 @@ class Xmodem:
             Failed to send packet
         """
 
-        # If we have one, update the read timeout so we wait the proper amount
-        # of time for a packet response
-        if self.packetTimeout is not None:
-            self._device.timeout = self.packetTimeout
-
         while True:
             # Get the packet
             packet = Xmodem.Packet.getPacket(
@@ -319,54 +427,30 @@ class Xmodem:
                 packetId = self._packetId
             )
 
-            self._logData(data = packet, output = True)
-
-            # If we aren't using flow control, chunk the data
-            if not self._device.rtscts:
-                writeLength = 0
-
-                packetBytes = list(packet)
-
-                while True:
-                    if len(packetBytes) < 1:
-                        break
-
-                    time.sleep(0.1)
-
-                    writeLength += self._device.write(packetBytes[0:Xmodem.ChunkSize])
-
-                    packetBytes = packetBytes[Xmodem.ChunkSize:]
-
-            # Else, just spit everything out
-            else:
-                writeLength = self._device.write(packet)
+            # Send the next packet of data
+            sent = self._sendData(data = Xmodem.Packet.getPacket(
+                packetData = packetData,
+                packetId = self._packetId
+            ))
 
             # If that failed, that's a paddlin'
-            if writeLength != len(packet):
-                self._logger.error("Failed to send all bytes (%d/%d)", writeLength, len(packet))
+            if not sent:
+                self._logger.error("Failed to send next packet")
 
                 return False
 
             # Wait for a response
-            response = self._device.read(1)
-
-            # If that failed, that's a paddlin'
-            if (response is None) or (len(response) < 1):
-                self._logger.error("Failed to get response")
-
-                return False
-
-            self._logData(data = response, output = False)
+            response = self._getResponse(timeout = self.packetTimeout)
 
             # If the modem ACKed the packet, move on
-            if response[0] == Xmodem.Packet.Ack:
+            if response == Xmodem.Packet.Ack:
                 # Use the next packet ID next time
                 self._packetId = Xmodem.Packet.getNextPacketId(packetId = self._packetId)
 
                 return True
 
             # If the modem NAKed the packet, try again
-            if response[0] == Xmodem.Packet.Nak:
+            if response == Xmodem.Packet.Nak:
                 self._logger.warning("Packet NAKed, retrying")
 
                 continue
@@ -424,7 +508,7 @@ class Xmodem:
             self._logger.info("Sending bytes %d-%d", count, count + self.packetSize)
 
             # If we fail to send the data, stop
-            if not self._sendData(packetData = packetData):
+            if not self._sendPacket(packetData = packetData):
                 break
 
             # Use the next chunk of data
