@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import logging
 import time
 
 from pynrfjprog import API
@@ -43,6 +44,10 @@ class Dap:
             self.api.connect_to_emu_without_snr()
         else:
             self.api.connect_to_emu_with_snr(serial_number = serialNumber)
+
+        dllVersion = self.api.dll_version()
+
+        logging.getLogger(__name__).info(f"Debugger using DLL version {dllVersion[0]}.{dllVersion[1]}{dllVersion[2]}")
 
     def __del__(self) -> None:
         """Deletes a DAP
