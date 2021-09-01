@@ -172,6 +172,9 @@ class Xmodem:
         # The id of the current packet being sent
         self._packetId = Xmodem.Packet.getFirstPacketId()
 
+        # Default data throttling to be on when flow control isn't on
+        self._throttle = not self._device.rtscts
+
         # Default to packet sizes of 1024
         self.packetSize = 1024
 
@@ -229,8 +232,8 @@ class Xmodem:
         # Note how much data we have to send
         dataLength = len(data)
 
-        # If we aren't using flow control, chunk the data
-        if not self._device.rtscts:
+        # If we're throttling our data, handle chunking it up
+        if self._throttle:
             self._logger.debug("No flow control, chunking data")
 
             writeLength = 0
@@ -508,7 +511,17 @@ class Xmodem:
 
             # Try to finish a partially dropped packet
             if self._finishDroppedPacket():
-                self._logger.warning("Packet had dropped bytes, retrying")
+                # If we haven't yet, turn on throttling our data
+                #
+                # Once we start dropping packet data, we should assume that flow
+                # control isn't sufficient to keep things flowing smoothly.
+                if not self._throttle:
+                    self._throttle = True
+
+                    self._logger.warning("Packet had dropped bytes, turning on throttling and retrying")
+
+                else:
+                    self._logger.warning("Packet had dropped bytes, retrying")
 
                 continue
 
