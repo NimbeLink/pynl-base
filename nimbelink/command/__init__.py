@@ -13,11 +13,9 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import typing
 
 from .command import Command
-from .rootCommand import RootCommand
 
 __all__ = [
     "Command",
-    "RootCommand",
 
     "register",
     "run"
@@ -64,7 +62,7 @@ def run(args: typing.List[object] = None) -> int:
         The result of the command
     """
 
-    return RootCommand(
+    return Command(
         name = "nimbelink",
         help = "Provides sub-commands",
         subCommands = __commands__
