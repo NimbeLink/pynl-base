@@ -10,6 +10,9 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import diskcache
+import os
+
 from .module import Module
 
 __all__ = [
@@ -30,9 +33,6 @@ Any modules from different packages that wish to be available under the
 nimbelink.modules.Module object to this list.
 """
 
-import diskcache
-import os
-
 def __getCache() -> diskcache.Cache:
     """Gets our local diskcache
 
@@ -47,13 +47,25 @@ def __getCache() -> diskcache.Cache:
     # Get this script's directory and use its local __pycache__ to store the
     # file(s)
     try:
-        return diskcache.Cache(os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "__pycache__"
-        ))
+        return diskcache.Cache(os.path.join(os.path.expanduser("~"), ".nlcache"))
 
     except Exception:
         return None
+
+def __cacheModules() -> None:
+    """Caches our module list
+
+    :param none:
+
+    :return none:
+    """
+
+    cache = __getCache()
+
+    if cache is None:
+        return
+
+    cache.set(key = "modules", value = __modules__)
 
 def __loadModules() -> None:
     """Loads our registered modules from our cache
@@ -71,14 +83,28 @@ def __loadModules() -> None:
     # Try to get our modules
     registeredModules = cache.get(key = "modules")
 
-    # If that worked, make them live
+    # If that failed, nothing to load
+    if registeredModules is None:
+        return
+
+    # Clear any existing modules
+    __modules__.clear()
+
+    # Grab all of our modules
     #
     # Note that we'll iterate through the returned list and manually append
     # them, as reassigning the __modules__ list itself to the returned list does
     # not appear to behave correctly... Actually not sure what's going on there.
-    if registeredModules != None:
-        for registeredModule in registeredModules:
-            __modules__.append(registeredModule)
+    for registeredModule in registeredModules:
+        # Make sure any duplicates are dropped
+        if registeredModule.name in [module.name for module in __modules__]:
+            continue
+
+        __modules__.append(registeredModule)
+
+    # If we filtered out any duplicates, recache our module list
+    if len(__modules__) != len(registeredModules):
+        __cacheModules()
 
 def register(module: Module) -> None:
     """Registers a new submodule
@@ -96,13 +122,8 @@ def register(module: Module) -> None:
     # Append this to our 'live' modules
     __modules__.append(module)
 
-    cache = __getCache()
-
-    if cache is None:
-        return
-
-    # Cache our new list of modules
-    cache.set(key = "modules", value = __modules__)
+    # Update our cache
+    __cacheModules()
 
 def unregister(module: Module) -> None:
     """Unregisters a submodule
@@ -118,13 +139,8 @@ def unregister(module: Module) -> None:
             # Remove this from our 'live' modules
             __modules__.pop(i)
 
-            cache = __getCache()
-
-            if cache is None:
-                break
-
-            # Cache our new list of modules
-            cache.set(key = "modules", value = __modules__)
+            # Update our cache
+            __cacheModules()
 
             break
 

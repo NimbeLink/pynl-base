@@ -41,3 +41,38 @@ class Module:
         """
 
         return f"{self.name} -> {self.alias}"
+
+    def __eq__(self, other) -> bool:
+        """Compares us to another module
+
+        :param self:
+            Self
+        :param other:
+            The module to compare to
+
+        :return True:
+            We are equal to the other module
+        :return False;
+            We are not equal to the other module
+        """
+
+        if other is None:
+            return False
+
+        return (self.name == other.name) and (self.alias == other.alias)
+
+    def __ne__(self, other) -> bool:
+        """Compares us to another module
+
+        :param self:
+            Self
+        :param other:
+            The module to compare to
+
+        :return True:
+            We are not equal to the other module
+        :return False:
+            We are equal to the other module
+        """
+
+        return not (self == other)
