@@ -195,7 +195,7 @@ class Command:
         # We'll do this check in case someone did a poor job managing their
         # __init__ chain with their parent class(es).
         if not self.stdout.hasHandlers():
-            handler = logging.StreamHandler()
+            handler = logging.StreamHandler(stream = sys.stdout)
             handler.setFormatter(logging.Formatter(fmt = "%(message)s"))
 
             self.stdout.setLevel(logging.DEBUG)
