@@ -47,14 +47,12 @@ class ListCommand(command.Command):
             Always
         """
 
-        self.stdout.info("Available Modules:")
-
         for submodule in module.__modules__:
             try:
                 # Try to import the module that may or may not be locally available
                 importlib.import_module(name = submodule.name)
 
-                self.stdout.info(f"    '{submodule.name}' (alias '{submodule.alias}')")
+                self.stdout.info(submodule)
 
             except ImportError as ex:
                 continue
@@ -114,7 +112,7 @@ class RegisterCommand(command.Command):
 
         module.register(submodule)
 
-        self.stdout.info(f"Registered package '{submodule.name}' (alias '{submodule.alias}')")
+        self.stdout.info(f"Registered '{submodule}')")
 
         return 0
 
@@ -178,7 +176,7 @@ class UnregisterCommand(command.Command):
 
         module.unregister(submodule)
 
-        self.stdout.info(f"Unregistered package '{submodule.name}' (alias '{submodule.alias}')")
+        self.stdout.info(f"Unregistered '{submodule}')")
 
         return 0
 
