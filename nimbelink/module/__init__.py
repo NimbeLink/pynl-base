@@ -17,6 +17,9 @@ from .module import Module
 
 __all__ = [
     "Module",
+
+    "register",
+    "unregister"
 ]
 
 import nimbelink.command as command
