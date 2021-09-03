@@ -10,19 +10,21 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-import diskcache
 import os
 
 from .module import Module
 
 __all__ = [
     "Module",
+
+    "register",
+    "unregister"
 ]
 
-import nimbelink.command as command
+import nimbelink.command
 from .__cmd__ import ModuleCommand
 
-command.register(command = ModuleCommand())
+nimbelink.command.register(command = ModuleCommand())
 
 __modules__ = [
 ]
@@ -33,24 +35,7 @@ Any modules from different packages that wish to be available under the
 nimbelink.modules.Module object to this list.
 """
 
-def __getCache() -> diskcache.Cache:
-    """Gets our local diskcache
-
-    :param none:
-
-    :return None:
-        Failed to get our cache
-    :return diskcache.Cache:
-        Our cache
-    """
-
-    # Get this script's directory and use its local __pycache__ to store the
-    # file(s)
-    try:
-        return diskcache.Cache(os.path.join(os.path.expanduser("~"), ".nlcache"))
-
-    except Exception:
-        return None
+import nimbelink.cache
 
 def __cacheModules() -> None:
     """Caches our module list
@@ -60,12 +45,7 @@ def __cacheModules() -> None:
     :return none:
     """
 
-    cache = __getCache()
-
-    if cache is None:
-        return
-
-    cache.set(key = "modules", value = __modules__)
+    nimbelink.cache.getCache("modules").set("list", __modules__)
 
 def __loadModules() -> None:
     """Loads our registered modules from our cache
@@ -75,13 +55,8 @@ def __loadModules() -> None:
     :return none:
     """
 
-    cache = __getCache()
-
-    if cache is None:
-        return
-
     # Try to get our modules
-    registeredModules = cache.get(key = "modules")
+    registeredModules = nimbelink.cache.getCache("modules").get("list")
 
     # If that failed, nothing to load
     if registeredModules is None:
