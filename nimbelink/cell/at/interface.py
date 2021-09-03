@@ -231,7 +231,7 @@ class Interface(object):
         :return none:
         """
 
-        if timeout == None:
+        if timeout is None:
             timeout = Interface.DefaultTimeout
 
         self.readTimeout = timeout
@@ -243,7 +243,7 @@ class Interface(object):
             now = time.time()
 
             # If this is our first time through, note when we started
-            if startTime == None:
+            if startTime is None:
                 startTime = now
 
             # If we've timed out, stop
@@ -355,7 +355,7 @@ class Interface(object):
             )
 
             # If this is a final result, return it
-            if response != None:
+            if response is not None:
                 return response
 
         raise Interface.CommError("Timeout waiting for response")
@@ -412,7 +412,7 @@ class Interface(object):
         # Get another URC
         for line in self._getLines(timeout = timeout):
             # If a pattern was specified but the URC doesn't match, ignore this
-            if (pattern != None) and (re.match(pattern, line) == None):
+            if (pattern is not None) and (re.match(pattern, line) is None):
                 continue
 
             # Got a URC that's wanted

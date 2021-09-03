@@ -138,7 +138,7 @@ class Socket(skywire.Socket):
                     pass
 
             # If they provided a file descriptor to use
-            if fileno != None:
+            if fileno is not None:
                 # If the socket ID doesn't exist, that's a paddlin'
                 if fileno not in existingSocketIds:
                     raise OSError(f"fileno {fileno} doesn't exist")
@@ -202,7 +202,7 @@ class Socket(skywire.Socket):
             :return none:
             """
 
-            if self.socketId != None:
+            if self.socketId is not None:
                 self.nano.at.sendCommand(f"AT#XSOCKET={self.socketId},0")
 
                 self.socketId = None

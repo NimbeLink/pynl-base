@@ -25,7 +25,7 @@ class Error(Exception):
         :return none:
         """
 
-        if message == None:
+        if message is None:
             message = "Modem error occurred"
 
         self._message = message
@@ -49,10 +49,10 @@ class AtError(Error):
         :return none:
         """
 
-        if message == None:
+        if message is None:
             message = "AT command failed"
 
-        if response != None:
+        if response is not None:
             message += f": {response}"
 
         self._response = response

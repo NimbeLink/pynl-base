@@ -75,7 +75,7 @@ class West:
 
         commands = ["init", "-m", host.url]
 
-        if ref != None:
+        if ref is not None:
             commands += ["--mr", ref]
 
         # Initialize the repository

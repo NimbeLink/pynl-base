@@ -146,10 +146,10 @@ class Command:
         :return none:
         """
 
-        if description == None:
+        if description is None:
             description = help
 
-        if subCommands == None:
+        if subCommands is None:
             subCommands = []
 
         self._name = name

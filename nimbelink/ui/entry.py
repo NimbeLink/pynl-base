@@ -48,7 +48,7 @@ class Entry:
         while True:
             sys.stdout.write(f"{self._prompt}")
 
-            if self._currentValue != None:
+            if self._currentValue is not None:
                 sys.stdout.write(" (current ")
 
                 if isinstance(self._currentValue, str):
@@ -69,7 +69,7 @@ class Entry:
             sys.stdout.write("\n")
 
             if len(input) < 1:
-                if self._currentValue != None:
+                if self._currentValue is not None:
                     return self._currentValue
 
                 sys.stdout.write("Please enter a value\n")

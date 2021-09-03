@@ -43,7 +43,7 @@ class Result(object):
             """
 
             # Make sure they're doing sensible things
-            if (code == None) and (variant != Result.Error.General):
+            if (code is None) and (variant != Result.Error.General):
                 raise ValueError("Need a code for non-general errors!")
 
             self.variant = variant
@@ -63,7 +63,7 @@ class Result(object):
                 We differ
             """
 
-            if other == None:
+            if other is None:
                 return False
 
             if (self.variant != other.variant) or (self.code != other.code):
@@ -175,7 +175,7 @@ class Result(object):
                 code = CmsError.getCode(name = name)
 
             # If we failed to look up the code, that's a paddlin'
-            if code == None:
+            if code is None:
                 return None
 
             return Result.Error(
@@ -248,7 +248,7 @@ class Result(object):
             We differ
         """
 
-        if other == None:
+        if other is None:
             return False
 
         if self.error != other.error:
@@ -284,7 +284,7 @@ class Result(object):
             Result was a failure
         """
 
-        if self.error == None:
+        if self.error is None:
             return True
 
         return False
@@ -299,7 +299,7 @@ class Result(object):
             Us
         """
 
-        if self.error == None:
+        if self.error is None:
             return "OK"
 
         return f"{self.error}"
@@ -325,7 +325,7 @@ class Result(object):
 
         error = Result.Error.makeFromString(string = string)
 
-        if error == None:
+        if error is None:
             return None
 
         return Result(error = error)
