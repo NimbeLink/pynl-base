@@ -29,41 +29,44 @@ class Command:
     """The root namespace for command loggers"""
 
     @staticmethod
-    def _generateDescription(description: str) -> str:
-        """Generates a big string describing this command
+    def _getParagraphs(string: str) -> typing.List[str]:
+        """Gets paragraph strings from formatted text
 
-        :param description:
-            The description text
+        :param string:
+            The string to parse
 
-        :return str:
-            The description string
+        :return typing.List[str]:
+            The paragraph strings
         """
 
-        # We likely have a description with a bunch of leading whitespace from a
+        # We likely have a string with a bunch of leading whitespace from a
         # multi-line string in the raw Python source, so let's first strip all
         # of that away
-        fields = description.split("\n", maxsplit = 1)
+        fields = string.split("\n", maxsplit = 1)
 
         # If there is only one line, just use it
         if len(fields) < 2:
             return fields[0]
 
-        # If there is a potential special case where the first line began
-        # immediately after the triple quote, only unindent everything after
-        # that line
+        # If this is the special case where the first line began immediately
+        # after the triple quote -- on the same line -- only unindent everything
+        # after that line
+        #
+        # Otherwise our unindenting calculations will not result in any
+        # following lines being unindented correctly.
         if fields[0] == fields[0].lstrip():
-            description = fields[0] + "\n" + textwrap.dedent(fields[1])
+            string = fields[0] + "\n" + textwrap.dedent(fields[1])
 
         # Else, unindent everything together
         else:
-            description = textwrap.dedent(description)
+            string = textwrap.dedent(string)
 
         # Next let's justify each line to our own standards
         #
         # Each line is separated by newline characters in the Python multi-line
         # string itself, so break the multi-line string into each individual
         # line.
-        lines = description.split("\n")
+        lines = string.split("\n")
 
         # We're going to be a little lazy with our appending and cleanup as we
         # form paragraphs, so make sure our space-removing step gets run on the
@@ -98,6 +101,21 @@ class Command:
             # append it
             else:
                 paragraphs[-1] += " " + line
+
+        return paragraphs
+
+    @staticmethod
+    def _combineParagraphs(paragraphs: typing.List[str], columns: int = 80) -> str:
+        """Generates a big string from paragraphs
+
+        :param paragraphs:
+            The paragraphs to use
+        :param columns:
+            How many columns to justify to
+
+        :return str:
+            The string
+        """
 
         text = ""
 
@@ -154,7 +172,9 @@ class Command:
 
         self._name = name
         self._help = help
-        self._description = Command._generateDescription(description = description)
+        self._description = Command._combineParagraphs(
+            paragraphs = Command._getParagraphs(string = description)
+        )
 
         # Assume we're the 'root' command
         self._isRoot = True
