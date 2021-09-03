@@ -136,8 +136,8 @@ class Command:
 
     def __init__(
         self,
-        name: str,
-        help: str,
+        name: str = None,
+        help: str = None,
         description: str = None,
         subCommands: typing.List["Command"] = None,
         needUsb: bool = False
@@ -161,20 +161,81 @@ class Command:
         :param needUsb:
             Whether or not this command needs USB functionality
 
+        :raise Exception:
+            Failed to auto-fill command name or help text
+
         :return none:
         """
 
+        # If we aren't given a name specifically, try to generate one from the
+        # child class' name
+        if name is None:
+            # Remove any casing
+            name = self.__class__.__name__.lower()
+
+            # Strip a 'command' post-fix in the class name
+            if name.endswith("command"):
+                name = name[:-len("command")]
+
+            # If we weren't given anything to work with, that's a paddlin'
+            if len(name) < 1:
+                raise Exception("Cannot have an auto-filled command name if class is just 'Command'")
+
+        # If we aren't given help text, try to generate some from the child
+        # class' doc strings
+        if help is None:
+            # If the class has doc strings
+            if self.__class__.__doc__ is not None:
+                paragraphs = Command._getParagraphs(string = self.__class__.__doc__)
+
+                # Use the first paragraph as our help text
+                help = paragraphs[0]
+
+                # If we weren't given a description either, try to make a more
+                # informed decision about what doc string contents to use
+                if description is None:
+                    # If there is more than one paragraph, treat the first one
+                    # as a subject for the help text and use the rest as the
+                    # more in-depth description text
+                    if len(paragraphs) > 1:
+                        description = Command._combineParagraphs(
+                            paragraphs = paragraphs[1:]
+                        )
+                    # Else, just use the same text as the help
+                    else:
+                        description = Command._combineParagraphs(
+                            paragraphs = paragraphs
+                        )
+
+            # Else, we weren't given anything to work with, and that's a
+            # paddlin'
+            else:
+                raise Exception("Cannot have an auto-filled command help if class has no doc string")
+
+        # If we aren't given a description, try to generate some from the child
+        # class' doc strings
         if description is None:
-            description = help
+            # If the class has doc strings, use them for the description
+            if self.__class__.__doc__ is not None:
+                description = Command._combineParagraphs(
+                    paragraphs = Command._getParagraphs(string = self.__class__.__doc__)[1:]
+                )
+
+            # Else, just re-use the help text
+            else:
+                description = help
+
+        else:
+            description = Command._combineParagraphs(
+                paragraphs = Command._getParagraphs(string = description)
+            )
 
         if subCommands is None:
             subCommands = []
 
         self._name = name
         self._help = help
-        self._description = Command._combineParagraphs(
-            paragraphs = Command._getParagraphs(string = description)
-        )
+        self._description = description
 
         # Assume we're the 'root' command
         self._isRoot = True
