@@ -65,7 +65,7 @@ class YamlBackend(Backend):
             raise OSError(f"Failed to load file {self._filename}")
 
         # If there wasn't any data, use an empty configuration
-        if data == None:
+        if data is None:
             raise OSError(f"No data found in file {self._filename}")
 
         return data

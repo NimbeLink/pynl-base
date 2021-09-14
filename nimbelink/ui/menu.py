@@ -68,7 +68,7 @@ class Menu:
             sys.stdout.write("\n")
 
             if len(input) < 1:
-                if self._currentValue != None:
+                if self._currentValue is not None:
                     return self._currentValue
 
                 sys.stdout.write("Please enter a selection\n")

@@ -238,7 +238,7 @@ class Option:
 
         string = f"{self._name}:"
 
-        if self._value != None:
+        if self._value is not None:
             string += f" {self._value}"
 
         return string

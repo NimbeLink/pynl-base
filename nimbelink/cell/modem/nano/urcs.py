@@ -100,7 +100,7 @@ class Urcs:
 
             # Make sure we have a value if we need one
             if (((type == Urcs.Dfu.Type.Failure) or (type == Urcs.Dfu.Type.Progress)) and
-                (value == None)
+                (value is None)
             ):
                 raise modem.AtError(None, "DFU URC missing value")
 

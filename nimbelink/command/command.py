@@ -29,41 +29,44 @@ class Command:
     """The root namespace for command loggers"""
 
     @staticmethod
-    def _generateDescription(description: str) -> str:
-        """Generates a big string describing this command
+    def _getParagraphs(string: str) -> typing.List[str]:
+        """Gets paragraph strings from formatted text
 
-        :param description:
-            The description text
+        :param string:
+            The string to parse
 
-        :return str:
-            The description string
+        :return typing.List[str]:
+            The paragraph strings
         """
 
-        # We likely have a description with a bunch of leading whitespace from a
+        # We likely have a string with a bunch of leading whitespace from a
         # multi-line string in the raw Python source, so let's first strip all
         # of that away
-        fields = description.split("\n", maxsplit = 1)
+        fields = string.split("\n", maxsplit = 1)
 
         # If there is only one line, just use it
         if len(fields) < 2:
             return fields[0]
 
-        # If there is a potential special case where the first line began
-        # immediately after the triple quote, only unindent everything after
-        # that line
+        # If this is the special case where the first line began immediately
+        # after the triple quote -- on the same line -- only unindent everything
+        # after that line
+        #
+        # Otherwise our unindenting calculations will not result in any
+        # following lines being unindented correctly.
         if fields[0] == fields[0].lstrip():
-            description = fields[0] + "\n" + textwrap.dedent(fields[1])
+            string = fields[0] + "\n" + textwrap.dedent(fields[1])
 
         # Else, unindent everything together
         else:
-            description = textwrap.dedent(description)
+            string = textwrap.dedent(string)
 
         # Next let's justify each line to our own standards
         #
         # Each line is separated by newline characters in the Python multi-line
         # string itself, so break the multi-line string into each individual
         # line.
-        lines = description.split("\n")
+        lines = string.split("\n")
 
         # We're going to be a little lazy with our appending and cleanup as we
         # form paragraphs, so make sure our space-removing step gets run on the
@@ -99,6 +102,21 @@ class Command:
             else:
                 paragraphs[-1] += " " + line
 
+        return paragraphs
+
+    @staticmethod
+    def _combineParagraphs(paragraphs: typing.List[str], columns: int = 80) -> str:
+        """Generates a big string from paragraphs
+
+        :param paragraphs:
+            The paragraphs to use
+        :param columns:
+            How many columns to justify to
+
+        :return str:
+            The string
+        """
+
         text = ""
 
         # We've got our paragraphs, so let's finally output each line as it'll
@@ -118,8 +136,8 @@ class Command:
 
     def __init__(
         self,
-        name: str,
-        help: str,
+        name: str = None,
+        help: str = None,
         description: str = None,
         subCommands: typing.List["Command"] = None,
         needUsb: bool = False
@@ -143,18 +161,81 @@ class Command:
         :param needUsb:
             Whether or not this command needs USB functionality
 
+        :raise Exception:
+            Failed to auto-fill command name or help text
+
         :return none:
         """
 
-        if description == None:
-            description = help
+        # If we aren't given a name specifically, try to generate one from the
+        # child class' name
+        if name is None:
+            # Remove any casing
+            name = self.__class__.__name__.lower()
 
-        if subCommands == None:
+            # Strip a 'command' post-fix in the class name
+            if name.endswith("command"):
+                name = name[:-len("command")]
+
+            # If we weren't given anything to work with, that's a paddlin'
+            if len(name) < 1:
+                raise Exception("Cannot have an auto-filled command name if class is just 'Command'")
+
+        # If we aren't given help text, try to generate some from the child
+        # class' doc strings
+        if help is None:
+            # If the class has doc strings
+            if self.__class__.__doc__ is not None:
+                paragraphs = Command._getParagraphs(string = self.__class__.__doc__)
+
+                # Use the first paragraph as our help text
+                help = paragraphs[0]
+
+                # If we weren't given a description either, try to make a more
+                # informed decision about what doc string contents to use
+                if description is None:
+                    # If there is more than one paragraph, treat the first one
+                    # as a subject for the help text and use the rest as the
+                    # more in-depth description text
+                    if len(paragraphs) > 1:
+                        description = Command._combineParagraphs(
+                            paragraphs = paragraphs[1:]
+                        )
+                    # Else, just use the same text as the help
+                    else:
+                        description = Command._combineParagraphs(
+                            paragraphs = paragraphs
+                        )
+
+            # Else, we weren't given anything to work with, and that's a
+            # paddlin'
+            else:
+                raise Exception("Cannot have an auto-filled command help if class has no doc string")
+
+        # If we aren't given a description, try to generate some from the child
+        # class' doc strings
+        if description is None:
+            # If the class has doc strings, use them for the description
+            if self.__class__.__doc__ is not None:
+                description = Command._combineParagraphs(
+                    paragraphs = Command._getParagraphs(string = self.__class__.__doc__)[1:]
+                )
+
+            # Else, just re-use the help text
+            else:
+                description = help
+
+        else:
+            description = Command._combineParagraphs(
+                paragraphs = Command._getParagraphs(string = description)
+            )
+
+        if subCommands is None:
             subCommands = []
 
         self._name = name
         self._help = help
-        self._description = Command._generateDescription(description = description)
+        self._description = description
 
         # Assume we're the 'root' command
         self._isRoot = True

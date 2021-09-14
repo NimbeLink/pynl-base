@@ -36,13 +36,13 @@ class Response(object):
         :return none:
         """
 
-        if command == None:
+        if command is None:
             command = ""
 
-        if output == None:
+        if output is None:
             output = ""
 
-        if newLine == None:
+        if newLine is None:
             newLine = Response.DefaultNewLine
 
         self.result = result
@@ -151,7 +151,7 @@ class Response(object):
             The response
         """
 
-        if newLine == None:
+        if newLine is None:
             newLine = Response.DefaultNewLine
 
         # If there is a final \r\n at the very end, discard it
@@ -171,14 +171,14 @@ class Response(object):
 
         # If we're provided a command for context, make sure the output is
         # stripped of any echoed command characters
-        if command != None:
+        if command is not None:
             output = Response._filterCommand(command = command, output = output)
 
         # Make the result from the last line
         result = Result.makeFromString(string = result)
 
         # If that failed, this isn't a valid response
-        if result == None:
+        if result is None:
             return None
 
         return Response(
