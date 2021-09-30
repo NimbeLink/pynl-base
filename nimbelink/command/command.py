@@ -18,7 +18,7 @@ import sys
 import textwrap
 import typing
 
-import nimbelink.utils as utils
+from .wsl import Wsl
 
 class Command:
     """A west command for working with Skywire Nano devices, collected under the
@@ -378,7 +378,7 @@ class Command:
                 help = "Use verbose output (1 'warning', 2 'info', 3 'debug', 4 'extra debug')"
             )
 
-            if utils.Wsl.isWsl():
+            if Wsl.isWsl():
                 help = "Force keeping operation inside WSL, even if using USB"
             else:
                 help = argparse.SUPPRESS
@@ -495,10 +495,10 @@ class Command:
         # If we will not be compatible with WSL's limited USB functionality,
         # we're running under WSL, and we're allowed to do so, elevate to
         # PowerShell
-        if self._needUsb and utils.Wsl.isWsl() and not args.forceWsl:
+        if self._needUsb and Wsl.isWsl() and not args.forceWsl:
             self.__logger.debug("Command run under WSL but needs USB, elevating to PowerShell")
 
-            return utils.Wsl.forward()
+            return Wsl.forward()
 
         try:
             # Always give the base command the chance to run

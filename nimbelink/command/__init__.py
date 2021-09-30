@@ -13,9 +13,11 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import typing
 
 from .command import Command
+from .wsl import Wsl
 
 __all__ = [
     "Command",
+    "Wsl",
 
     "register",
     "run"

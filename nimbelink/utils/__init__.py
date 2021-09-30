@@ -14,7 +14,6 @@ from .devicetree import Devicetree
 from .flash import Flash
 from .kconfig import Kconfig
 from .west import West
-from .wsl import Wsl
 from .xmodem import Xmodem
 
 __all__ = [
@@ -22,6 +21,5 @@ __all__ = [
     "Flash",
     "Kconfig",
     "West",
-    "Wsl",
     "Xmodem"
 ]
