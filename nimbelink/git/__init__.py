@@ -14,8 +14,6 @@ from .bitbucket import BitBucket
 from .host import Host
 from .repo import Repo
 
-from . import version
-
 __all__ = [
     "Repo",
 
