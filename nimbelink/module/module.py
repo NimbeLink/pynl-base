@@ -10,6 +10,9 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import importlib
+import sys
+
 class Module:
     """An installable NimbeLink Python package
     """
@@ -76,3 +79,49 @@ class Module:
         """
 
         return not (self == other)
+
+    def exists(self) -> bool:
+        """Gets if this module exists in the current context
+
+        :param self:
+            Self
+
+        :return True:
+            Module exists
+        :return False:
+            Module does not exist
+        """
+
+        # If we find a valid spec for our real package, we exist
+        if importlib.util.find_spec(name = self.name) is not None:
+            return True
+
+        return False
+
+    def doImport(self) -> object:
+        """Imports this module to the global namespace
+
+        :param self:
+            Self
+
+        :return object:
+            This module's 'spec'
+        """
+
+        # Try to find our real package
+        spec = importlib.util.find_spec(name = self.name)
+
+        # If that failed, we obviously can't import
+        if spec is None:
+            return
+
+        # Get our 'nimbelink' package's spec
+        nimbelinkSpec = importlib.util.find_spec(name = "nimbelink")
+
+        # Add the submodule's search path to our 'nimbelink' one
+        nimbelinkSpec.submodule_search_locations.extend(spec.submodule_search_locations)
+
+        # Perform the import now that it should be in our path
+        importlib.import_module(name = f"nimbelink.{self.alias}")
+
+        return spec

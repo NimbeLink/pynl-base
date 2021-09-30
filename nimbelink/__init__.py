@@ -21,64 +21,56 @@ __all__ = [
     "utils"
 ]
 
-__addons__ = [
-]
-"""Additional submodules that are dynamically loaded from the local
-environment"""
+import importlib
+import sys
 
-def __importModules():
-    """Imports our dynamic NimbeLink modules
-
-    :param none:
-
-    :return none:
+class PynlFinder(importlib.abc.MetaPathFinder):
+    """A submodule finder for loading dynamic NimbeLink modules
     """
 
-    import importlib
-    import sys
+    def find_spec(self, fullname, path, target = None):
+        """Finds pynl-like submodule specs
 
-    import nimbelink.module
+        :param self:
+            Self
+        :param fullname:
+            The name of the package to try to find
+        :param path:
+            The path being sought
+        :param target:
+            The target
 
-    # Make a copy of the list of modules in case we trim anything
-    modules = nimbelink.module.__modules__.copy()
+        :return None:
+            Failed to find module
+        """
 
-    for module in modules:
-        try:
-            # Try to import the module that may or may not be locally available
-            importedModule = importlib.import_module(name = module.name)
+        packages = fullname.split(".")
 
-            # That worked, so add it as a module under our namespace
-            #
-            # This allows someone to import 'nimbelink.x'.
-            sys.modules["nimbelink." + module.alias] = importedModule
+        # If they aren't looking for a 'nimbelink'-scoped package, this must not
+        # be for a pynl package
+        if packages[0] != "nimbelink":
+            return None
 
-            # Make sure the module can be accessed directly without needing to
-            # import it 'from' us
-            #
-            # This allows someone to access 'nimbelink.x' verbosely without
-            # needing to 'import from' or 'import as'.
-            #
-            # With the preceding operation, someone can 'import nimbelink.x',
-            # but until this operation they wouldn't be able to then use the
-            # submodule. Something like 'help(nimbelink.x)' would actually fail,
-            # despite the initial import working.
-            globals()[module.alias] = importedModule
+        # If this isn't for a first-level pynl package, we won't be able to load
+        # whatever this is for them
+        #
+        # In this case, we likely loaded the pynl package but now the user is
+        # trying to access something within the (loaded) package that doesn't
+        # exist.
+        if len(packages) != 2:
+            return None
 
-            # The above operations make the submodule fully usable by code that
-            # knows about it, but it won't show up under the 'nimbelink' help
-            # information, despite being namespaced. So, add it to a tracker
-            # we'll use to show the available submodules we've dynamically
-            # imported.
-            __addons__.append(module.alias)
+        import nimbelink.module
 
-        except ImportError as ex:
-            # If the import error is this module, it apparently doesn't exist,
-            # so remove it
-            if ex.name == module.name:
-                nimbelink.module.unregister(module)
+        # Clean up any dangling modules that no longer exist
+        nimbelink.module.__modules__.prune()
 
-            # Else, bubble up the import error as if it occurred normally
-            else:
-                raise ex
+        for module in nimbelink.module.__modules__:
+            # If this is the module they're trying to find, great, found it
+            if module.alias == packages[1]:
+                return module.doImport()
 
-__importModules()
+        return None
+
+# Add our submodule finder to the system
+sys.meta_path.append(PynlFinder())
