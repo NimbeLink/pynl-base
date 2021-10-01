@@ -50,6 +50,10 @@ def register(command: Command) -> None:
     :return none:
     """
 
+    # If we've already got a command like this, ignore it
+    if command._name in [existingCommand._name for existingCommand in __commands__]:
+        return
+
     __commands__.append(command)
 
 def run(args: typing.List[object] = None) -> int:
