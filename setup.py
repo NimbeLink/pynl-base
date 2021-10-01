@@ -16,7 +16,7 @@ from setuptools import find_packages
 setup(
     name = "pynl-base",
     description = "NimbeLink library base",
-    version = "1.0.2",
+    version = "1.0.3",
     packages = find_packages(),
     entry_points = {
         "console_scripts":
