@@ -26,8 +26,6 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
-import nimbelink.config as config
-
 from .command import Command
 
 class WestCommand(Command, WestCommandBase):

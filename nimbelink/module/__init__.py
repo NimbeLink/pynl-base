@@ -10,12 +10,12 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-import os
-
 from .module import Module
+from .moduleList import ModuleList
 
 __all__ = [
     "Module",
+    "ModuleList",
 
     "register",
     "unregister"
@@ -26,60 +26,8 @@ from .__cmd__ import ModuleCommand
 
 nimbelink.command.register(command = ModuleCommand())
 
-__modules__ = [
-]
-"""Dynamic 'nimbelink' submodules
-
-Any modules from different packages that wish to be available under the
-'nimbelink' package namespace can register their instantiated
-nimbelink.modules.Module object to this list.
-"""
-
-import nimbelink.cache
-
-def __cacheModules() -> None:
-    """Caches our module list
-
-    :param none:
-
-    :return none:
-    """
-
-    nimbelink.cache.getCache("modules").set("list", __modules__)
-
-def __loadModules() -> None:
-    """Loads our registered modules from our cache
-
-    :param none:
-
-    :return none:
-    """
-
-    # Try to get our modules
-    registeredModules = nimbelink.cache.getCache("modules").get("list")
-
-    # If that failed, nothing to load
-    if registeredModules is None:
-        return
-
-    # Clear any existing modules
-    __modules__.clear()
-
-    # Grab all of our modules
-    #
-    # Note that we'll iterate through the returned list and manually append
-    # them, as reassigning the __modules__ list itself to the returned list does
-    # not appear to behave correctly... Actually not sure what's going on there.
-    for registeredModule in registeredModules:
-        # Make sure any duplicates are dropped
-        if registeredModule.name in [module.name for module in __modules__]:
-            continue
-
-        __modules__.append(registeredModule)
-
-    # If we filtered out any duplicates, recache our module list
-    if len(__modules__) != len(registeredModules):
-        __cacheModules()
+__modules__ = ModuleList()
+"""The pynl packages we know about"""
 
 def register(module: Module) -> None:
     """Registers a new submodule
@@ -90,15 +38,7 @@ def register(module: Module) -> None:
     :return none:
     """
 
-    # If this module is already registered, nothing to do
-    if module in __modules__:
-        return
-
-    # Append this to our 'live' modules
-    __modules__.append(module)
-
-    # Update our cache
-    __cacheModules()
+    __modules__.append(module = module)
 
 def unregister(module: Module) -> None:
     """Unregisters a submodule
@@ -109,14 +49,4 @@ def unregister(module: Module) -> None:
     :return none:
     """
 
-    for i in range(len(__modules__)):
-        if module == __modules__[i]:
-            # Remove this from our 'live' modules
-            __modules__.pop(i)
-
-            # Update our cache
-            __cacheModules()
-
-            break
-
-__loadModules()
+    __modules__.remove(module = module)

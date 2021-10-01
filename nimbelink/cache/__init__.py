@@ -12,8 +12,6 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 
 import os
 
-import nimbelink
-
 from .cache import Cache
 
 __all__ = [
@@ -38,6 +36,8 @@ def getCache(namespace: str = "root") -> Cache:
     :return Cache:
         The cache
     """
+
+    import nimbelink
 
     # Grab the cache stored in our base 'nimbelink' package's installation
     # directory

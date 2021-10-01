@@ -13,9 +13,11 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 import typing
 
 from .command import Command
+from .wsl import Wsl
 
 __all__ = [
     "Command",
+    "Wsl",
 
     "register",
     "run"
@@ -61,6 +63,15 @@ def run(args: typing.List[object] = None) -> int:
     :return int:
         The result of the command
     """
+
+    import nimbelink.module
+
+    # We likely have not yet imported all of our registered modules, and they
+    # typically use our command registration hook when they're imported, so we
+    # will first need to do that before we start forming the argparse command
+    # tree
+    for module in nimbelink.module.__modules__:
+        module.doImport()
 
     return Command(
         name = "nimbelink",
