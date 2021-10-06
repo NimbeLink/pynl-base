@@ -10,23 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
-from distutils.core import setup
-from setuptools import find_packages
+import setuptools
 
-setup(
-    name = "pynl-base",
-    description = "NimbeLink library base",
-    version = "1.0.3",
-    packages = find_packages(),
-    entry_points = {
-        "console_scripts":
-            ["nimbelink=nimbelink.__main__:main"]
-    },
-    install_requires = [
-        "diskcache",
-        "pynrfjprog",
-        "pyserial>=3.4",
-        "PyYAML>=5.3",
-        "requests",
-    ]
-)
+if __name__ == "__main__":
+    setuptools.setup()
