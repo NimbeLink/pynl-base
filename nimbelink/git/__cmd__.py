@@ -11,6 +11,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import argparse
+import logging
 import os
 import typing
 
@@ -104,8 +105,12 @@ class VersionCommand(command.Command):
             Our result
         """
 
+        logger = logging.getLogger(__name__)
+
         # If the version has been specified, use it
         if args.string is not None:
+            logger.info(f"Making version from provided string '{args.string}'")
+
             version = git.version.Version.makeFromString(string = args.string)
 
             # If that failed, that's a paddlin'
@@ -115,6 +120,8 @@ class VersionCommand(command.Command):
 
         # Else, get the current repository version
         else:
+            logger.info("Detecting version using current directory as Git repository")
+
             # Make a version from the repo's Git description
             version = git.Repo(directory = args.directory).getVersion()
 
@@ -125,28 +132,40 @@ class VersionCommand(command.Command):
 
             # If they specified the base version, use that
             if args.base is not None:
+                logger.info(f"Overriding base with provided '{args.base}'")
+
                 version.base = git.version.Base.makeFromString(string = args.base)
 
             # If they specified the flavor, use that
             if args.flavor is not None:
+                logger.info(f"Overriding flavor with provided '{args.flavor}'")
+
                 version.flavor = args.flavor
 
         # If this is an app version file, format for that
         if args.type == "str":
+            logger.info("Generating long-form text string")
+
             contents = version.toString()
 
             # If this will be going to a file for compilation in an
             # application, make sure it's a C-style string
             if args.outputFile is not None:
+                logger.info("Escaping contents in quotation marks")
+
                 contents = f"\"{contents}\""
 
         # Else, if this is an MCUBoot version file, format for that
         elif args.type == "int":
+            logger.info("Generating short-form integer string")
+
             contents = version.toIntegers()
 
         # Else, huh?
         else:
             raise Exception(f"Invalid version type '{args.type}'")
+
+        logger.info(f"Final version '{contents}'")
 
         # If this isn't going to a directory, just spit it
         if not args.outputFile:
@@ -159,6 +178,7 @@ class VersionCommand(command.Command):
                 with open(args.outputFile, "r") as file:
                     # If the contents are the same, nothing to do
                     if file.read().strip() == contents:
+                        logger.info(f"File '{args.outputFile}' already matches, skipping writing")
                         return 0
 
                 # The file is different, so delete it first
