@@ -25,25 +25,28 @@ class Base:
             The base version
         """
 
-        # If this doesn't start with 'v', we can't be sure it's a version, so
-        # just assume it's a name
-        if (len(string) < 1) or (string[0] != 'v'):
-            return Base(name = string)
+        # If this begins with a 'v', drop it
+        if (len(string) > 0) and (string[0] == 'v'):
+            string = string[1:]
 
-        # Drop the 'v', and split this into its components
-        fields = string[1:].split(".")
+        # Try to split the version this into its components separated by periods
+        fields = string.split(".")
 
-        # If we don't have a major, minor, and tick, that's a paddlin'
+        # If we don't have a major, minor, and tick, assume we're just getting a
+        # simple string as the 'version'
         if len(fields) != 3:
-            return None
+            return Base(name = string)
 
         # Our major and minor are always on their own
         try:
             major = int(fields[0])
             minor = int(fields[1])
             tick = int(fields[2])
+
+        # If something went wrong, assume we're just getting a simple string as
+        # the 'version'
         except ValueError:
-            return None
+            return Base(name = string)
 
         return Base(
             major = major,
