@@ -10,6 +10,7 @@ party license terms as specified in this software, and such portions are
 excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
+import logging
 import os
 import re
 import subprocess
@@ -115,6 +116,8 @@ class Repo:
         self._directory = directory
 
         self._host = None
+
+        self._logger = logging.getLogger(__name__)
 
     @property
     def directory(self) -> str:
@@ -478,11 +481,34 @@ class Repo:
 
         # If we don't have a branch name, just use a default
         if branch is None:
+            self._logger.info("No branch available")
+
             branch = "none"
+
+        # Else, this is a little kludgy burying this logging in the else case,
+        # but this makes keeping the logging of the prefix check a little more
+        # concise in the code
+        #
+        # That is, when there isn't a branch available, we'll deterministically
+        # behave as if we hadn't done the check. Since we log above that no
+        # branch was found, we might as not even broadcast the check for the
+        # prefix.
+        #
+        # When there was a branch found, we'll always check for the prefix, and
+        # instead of logging the prefix we're checking for in two different
+        # lines, we can just do it once here.
+        #
+        # Don't think I've ever documented a debug print line this much
+        # before...
+        else:
+            self._logger.info(f"Found current branch '{branch}'")
+            self._logger.info(f"Checking branch for release prefix '{Repo.ReleaseBranchPrefix}'")
 
         # If we're on a release branch, let's filter the tags using its version
         # masking
         if branch.startswith(Repo.ReleaseBranchPrefix):
+            self._logger.info("Branch is a release branch, parsing name for tag filter")
+
             # Drop the 'release/'
             tagMatch = branch.replace(Repo.ReleaseBranchPrefix, "")
 
@@ -497,20 +523,28 @@ class Repo:
             # this pattern
             match += r"-rc1"
 
+            self._logger.info(f"Matching Git tags with '{match}'")
+
             description = self.getDescription(annotatedOnly = False, match = match)
 
             # If that failed, that's a paddlin'
             if description is None:
                 return None
 
+            self._logger.info(f"Found latest RC1 tag '{description}', using as version base")
+
             # Make our version from that
             ver = version.Version.makeFromString(string = description)
+
+            self._logger.info("Dropping 'RC' from version to get potential current version")
 
             # Drop the release candidate designation
             ver.rc = None
 
         # Else, we're on a development branch, so just get the plain description
         else:
+            self._logger.info("Branch is not a release branch, falling back on description for version")
+
             # Get our description
             description = self.getDescription()
 
@@ -518,8 +552,12 @@ class Repo:
             if description is None:
                 return None
 
+            self._logger.info(f"Found base description '{description}'")
+
             # Make a version from that
             ver = version.Version.makeFromString(string = description)
+
+            self._logger.info("Setting branch name as the 'base' of the version")
 
             # Use our branch name as the base
             ver.base = version.Base(name = branch)
@@ -528,6 +566,8 @@ class Repo:
             ver.rc = None
             ver.flavor = None
             ver.info.commits = None
+
+        self._logger.info(f"Final version '{ver}'")
 
         # Cool cool cool
         return ver
