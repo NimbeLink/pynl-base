@@ -232,6 +232,9 @@ class Repo:
 
         description = self._runCommand(commands)
 
+        if description is None:
+            return None
+
         # Make sure the descriptions doesn't have the 'heads/' or 'tags/'
         # prefixes, which comes from our '--all' flag
         if description.startswith("heads/"):
