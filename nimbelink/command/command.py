@@ -268,7 +268,7 @@ class Command:
         # handling logging.
         self.__logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
 
-        self.stdout = logging.getLogger("nimbelink-commands." + self.__class__.__name__)
+        self._stdout = None
 
         commandLogger = logging.getLogger("nimbelink-commands")
 
@@ -556,6 +556,22 @@ class Command:
             # exception up to make sure everyone gets a chance to handle the
             # aborted command
             raise ex
+
+    @property
+    def stdout(self) -> logging.Logger:
+        """Gets this command's stdout
+
+        :param self:
+            Self
+
+        :return logging.Logger:
+            This command's logger
+        """
+
+        if self._stdout is None:
+            self._stdout = logging.getLogger("nimbelink-commands." + self.__class__.__name__)
+
+        return self._stdout
 
     def addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds parser arguments
