@@ -270,18 +270,20 @@ class Command:
 
         self.stdout = logging.getLogger("nimbelink-commands." + self.__class__.__name__)
 
+        commandLogger = logging.getLogger("nimbelink-commands")
+
         # If we haven't yet, set up command output using a standard 'stream'
         # logger
         #
         # We'll do this check in case someone did a poor job managing their
         # __init__ chain with their parent class(es).
-        if not self.stdout.hasHandlers():
+        if not commandLogger.hasHandlers():
             handler = logging.StreamHandler(stream = sys.stdout)
             handler.setFormatter(logging.Formatter(fmt = "%(message)s"))
 
-            self.stdout.setLevel(logging.DEBUG)
-            self.stdout.addHandler(handler)
-            self.stdout.propagate = False
+            commandLogger.setLevel(logging.DEBUG)
+            commandLogger.addHandler(handler)
+            commandLogger.propagate = False
 
     @property
     def _allSubCommands(self) -> "Command":
