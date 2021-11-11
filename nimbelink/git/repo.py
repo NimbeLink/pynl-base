@@ -457,6 +457,11 @@ class Repo:
     def getVersion(self, description: str = None) -> version.Version:
         """Creates a new repository version from the current repository
 
+        This will use the current repositories collection of tags to generate a
+        version, akin to using 'git describe'. However, this will apply special
+        filtering on the tag(s) used depending on if the current branch is a
+        'release' branch.
+
         :param self:
             Self
         :param description:
@@ -475,7 +480,8 @@ class Repo:
         if branch is None:
             branch = "none"
 
-        # If we're on a release branch
+        # If we're on a release branch, let's filter the tags using its version
+        # masking
         if branch.startswith(Repo.ReleaseBranchPrefix):
             # Drop the 'release/'
             tagMatch = branch.replace(Repo.ReleaseBranchPrefix, "")
@@ -503,9 +509,7 @@ class Repo:
             # Drop the release candidate designation
             ver.rc = None
 
-            return ver
-
-        # Else, we're on a development branch
+        # Else, we're on a development branch, so just get the plain description
         else:
             # Get our description
             description = self.getDescription()
@@ -520,5 +524,10 @@ class Repo:
             # Use our branch name as the base
             ver.base = version.Base(name = branch)
 
-            # Cool cool cool
-            return ver
+            # Drop any extra stuff we might've picked up
+            ver.rc = None
+            ver.flavor = None
+            ver.info.commits = None
+
+        # Cool cool cool
+        return ver
