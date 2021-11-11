@@ -16,9 +16,7 @@ import typing
 
 import nimbelink.command as command
 import nimbelink.git as git
-
-from .base import Base
-from .version import Version
+import nimbelink.git.version
 
 class VersionCommand(command.Command):
     """A command for generating version information
@@ -108,7 +106,7 @@ class VersionCommand(command.Command):
 
         # If the version has been specified, use it
         if args.string is not None:
-            version = Version.makeFromString(string = args.string)
+            version = git.version.Version.makeFromString(string = args.string)
 
             # If that failed, that's a paddlin'
             if version is None:
@@ -127,7 +125,7 @@ class VersionCommand(command.Command):
 
             # If they specified the base version, use that
             if args.base is not None:
-                version.base = Base(name = args.base)
+                version.base = git.version.Base.makeFromString(string = args.base)
 
             # If they specified the flavor, use that
             if args.flavor is not None:
@@ -174,3 +172,8 @@ class VersionCommand(command.Command):
             file.write(contents)
 
         return 0
+
+__commands__ = [
+    VersionCommand()
+]
+"""Our package's commands"""
