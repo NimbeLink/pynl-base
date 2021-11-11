@@ -457,7 +457,7 @@ class Command:
             #
             # This provides nice contextualized logging output for most modules.
             handler = logging.StreamHandler()
-            handler.setFormatter(logging.Formatter(fmt = "%(asctime)s - %(module)s - %(levelname)s -- %(message)s"))
+            handler.setFormatter(logging.Formatter(fmt = "%(asctime)s - %(pathname)s - %(levelname)s -- %(message)s"))
 
             logger = logging.getLogger()
             logger.setLevel(level)
