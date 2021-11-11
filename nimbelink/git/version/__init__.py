@@ -20,8 +20,3 @@ __all__ = [
     "Info",
     "Version",
 ]
-
-import nimbelink.command
-from .__cmd__ import VersionCommand
-
-nimbelink.command.register(command = VersionCommand())

@@ -114,3 +114,8 @@ class CacheCommand(command.Command):
                 ListCommand()
             ]
         )
+
+__commands__ = [
+    CacheCommand()
+]
+"""The package's commands"""

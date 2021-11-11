@@ -268,20 +268,22 @@ class Command:
         # handling logging.
         self.__logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
 
-        self.stdout = logging.getLogger("nimbelink-commands." + self.__class__.__name__)
+        self._stdout = None
+
+        commandLogger = logging.getLogger("nimbelink-commands")
 
         # If we haven't yet, set up command output using a standard 'stream'
         # logger
         #
         # We'll do this check in case someone did a poor job managing their
         # __init__ chain with their parent class(es).
-        if not self.stdout.hasHandlers():
+        if not commandLogger.hasHandlers():
             handler = logging.StreamHandler(stream = sys.stdout)
             handler.setFormatter(logging.Formatter(fmt = "%(message)s"))
 
-            self.stdout.setLevel(logging.DEBUG)
-            self.stdout.addHandler(handler)
-            self.stdout.propagate = False
+            commandLogger.setLevel(logging.DEBUG)
+            commandLogger.addHandler(handler)
+            commandLogger.propagate = False
 
     @property
     def _allSubCommands(self) -> "Command":
@@ -455,7 +457,7 @@ class Command:
             #
             # This provides nice contextualized logging output for most modules.
             handler = logging.StreamHandler()
-            handler.setFormatter(logging.Formatter(fmt = "%(asctime)s - %(module)s - %(levelname)s -- %(message)s"))
+            handler.setFormatter(logging.Formatter(fmt = "%(asctime)s - %(pathname)s - %(levelname)s -- %(message)s"))
 
             logger = logging.getLogger()
             logger.setLevel(level)
@@ -554,6 +556,22 @@ class Command:
             # exception up to make sure everyone gets a chance to handle the
             # aborted command
             raise ex
+
+    @property
+    def stdout(self) -> logging.Logger:
+        """Gets this command's stdout
+
+        :param self:
+            Self
+
+        :return logging.Logger:
+            This command's logger
+        """
+
+        if self._stdout is None:
+            self._stdout = logging.getLogger("nimbelink-commands." + self.__class__.__name__)
+
+        return self._stdout
 
     def addArguments(self, parser: argparse.ArgumentParser) -> None:
         """Adds parser arguments

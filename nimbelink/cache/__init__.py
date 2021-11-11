@@ -20,11 +20,6 @@ __all__ = [
     "getCache"
 ]
 
-import nimbelink.command
-from .__cmd__ import CacheCommand
-
-nimbelink.command.register(command = CacheCommand())
-
 def getCache(namespace: str = "root") -> Cache:
     """Gets a NimbeLink cache
 

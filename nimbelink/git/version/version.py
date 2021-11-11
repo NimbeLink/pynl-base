@@ -18,15 +18,19 @@ class Version:
 
     The fullest form of the version looks like:
 
-        v<major>.<minor>.<tick>-<flavor>-<commit count>-g<commit>-dirty
+        v<major>.<minor>.<tick>-rc<rc>-<flavor>-<commit count>-g<commit>-dirty
 
     More concisely:
 
-        vX.Y.Z-flavor-N-gAAAAAA-dirty
+        vX.Y.Z-rcN-flavor-N-gAAAAAA-dirty
 
-    -<flavor> can be included or not in any version
+    'v' is optional
 
-    -dirty can be included or not in any version that includes the -g<commit>
+    -rc<rc> is optional in any version
+
+    -<flavor> is optional in any version
+
+    -dirty is optional in any version that includes the -g<commit>
     """
 
     @staticmethod
