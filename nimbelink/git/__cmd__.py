@@ -150,7 +150,7 @@ class VersionCommand(command.Command):
 
         # If this isn't going to a directory, just spit it
         if not args.outputFile:
-            print(f"{contents}")
+            self.stdout.info(f"{contents}")
             return 0
 
         try:
