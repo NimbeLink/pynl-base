@@ -172,11 +172,14 @@ class Repo:
         """
 
         try:
-            output = subprocess.check_output([
-                "git",
-                "-C",
-                self._directory
-            ] + command)
+            output = subprocess.check_output(
+                [
+                    "git",
+                    "-C",
+                    self._directory
+                ] + command,
+                stderr = subprocess.DEVNULL
+            )
 
         except subprocess.CalledProcessError:
             return None
