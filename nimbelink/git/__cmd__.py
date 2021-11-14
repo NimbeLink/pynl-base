@@ -192,8 +192,3 @@ class VersionCommand(command.Command):
             file.write(contents)
 
         return 0
-
-__commands__ = [
-    VersionCommand()
-]
-"""Our package's commands"""
