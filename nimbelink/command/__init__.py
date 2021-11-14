@@ -11,7 +11,7 @@ excluded from the preceding copyright notice of NimbeLink Corp.
 """
 
 import importlib
-import os
+import importlib.metadata
 import typing
 
 from .command import Command
@@ -37,15 +37,17 @@ __commands__ = [
 ]
 """Commands that are available for running from the command-line
 
-Any modules that wish to have their modules registered for running from the
-command-line can include a __cmd__.py file in their nimbelink.<path> submodule
-directory, which should contain a __commands__ array of commands. The commands
-can be either classes or instantiated objects, but should *not* be string names
-of classes (i.e. they need to be a reference to an imported class or an
-instantiated object).
+Any modules that wish to have their commands registered for running from the
+command-line can include 'entry_points' entries in their package that configure
+first-level sub-commands to link into the root command. The 'name' field is
+ignored by the command handling. The 'value' field should point to the file and
+command to be included. For example, in a setup.cfg:
 
-When commands are run, all discovered commands will be linked into the top-level
-list as direct sub-commands.
+    [options.entry_points]
+    pynl.commands =
+        myentry = my.package.command:MyCommand
+
+The commands used should not take any parameters for instantiation.
 """
 
 def register(command: Command) -> None:
@@ -57,59 +59,79 @@ def register(command: Command) -> None:
     :return none:
     """
 
-    # If we've already got a command like this, ignore it
-    if command._name in [existingCommand._name for existingCommand in __commands__]:
-        return
-
     __commands__.append(command)
 
-def run(args: typing.List[object] = None) -> int:
+def _discoverCommands(entryPointsName: str) -> None:
+    """Discovers registered pynl commands
+
+    :param entryPointsName:
+        The entry points to discover sub-commands for
+
+    :return none:
+    """
+
+    # Add the 'commands' component to the entry points namespace
+    #
+    # This forms the:
+    #
+    #   [options.entry_points]
+    #   <entryPointsName>.commands =
+    #
+    # component of the Python package options.
+    entryPointsName += ".commands"
+
+    # Get the Python entry points
+    entryPoints = importlib.metadata.entry_points()
+
+    # If our pynl commands entry doesn't exist, we must not have any entry
+    # points registered
+    if entryPointsName not in entryPoints:
+        return
+
+    for commandEntryPoint in entryPoints[entryPointsName]:
+        # Get the file and command from the 'value', which are separated by a
+        # ':'
+        fields = commandEntryPoint.value.split(":")
+
+        # If this entry wasn't properly formatted, skip it
+        if len(fields) != 2:
+            continue
+
+        # Import the module
+        module = importlib.import_module(fields[0])
+
+        # If the module doesn't have the specified class, skip it
+        if not hasattr(module, fields[1]):
+            continue
+
+        # Get the command
+        command = getattr(module, fields[1])
+
+        # Be paranoid and double-check that we got the class
+        if command is None:
+            continue
+
+        # Register the discovered command
+        register(command = command)
+
+def run(args: typing.List[object] = None, entryPointsName: str = None) -> int:
     """Runs our commands with arguments
 
     If arguments are not provided, sys.argv will be automatically used.
 
     :param args:
         The arguments to run with
+    :param entryPointsName:
+        The entry points namespace to find sub-commands in
 
     :return int:
         The result of the command
     """
 
-    # Get our 'nimbelink' namespace spec
-    spec = importlib.util.find_spec("nimbelink")
+    if entryPointsName is None:
+        entryPointsName = "pynl"
 
-    # In each submodule search location, try to find potential submodules with
-    # sub-commands
-    for location in spec.submodule_search_locations:
-        for submoduleName in os.listdir(location):
-            fullPath = os.path.join(location, submoduleName)
-
-            # If this isn't a directory, then it isn't a submodule
-            if not os.path.isdir(fullPath):
-                continue
-
-            # If this directory doesn't contain a __cmd__.py file, then it might
-            # be a submodule, but it doesn't have any commands it wishes to
-            # register
-            if not os.path.exists(os.path.join(fullPath, "__cmd__.py")):
-                continue
-
-            name = f"nimbelink.{submoduleName}.__cmd__"
-
-            # Import the submodule that (should) contain the sub-command list
-            module = importlib.import_module(name)
-
-            # Double-check that they properly listed their commands
-            if not hasattr(module, "__commands__"):
-                continue
-
-            # Double-check that they properly *listed* their commands
-            if not isinstance(module.__commands__, list):
-                continue
-
-            # Add the submodule's commands to our sub-command list
-            for command in module.__commands__:
-                register(command = command)
+    _discoverCommands(entryPointsName = entryPointsName)
 
     return Command(
         name = "nimbelink",
