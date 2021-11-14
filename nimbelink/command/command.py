@@ -233,6 +233,16 @@ class Command:
         if subCommands is None:
             subCommands = []
 
+        # Get a logger for logging our own command stuff
+        #
+        # This is distinct from the sans-formatting output a typical command
+        # will generate.
+        #
+        # We'll also isolate our logger from other loggers, since someone might
+        # library debugging output but still not want the boring command
+        # handling logging.
+        self.__logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
+
         self._name = name
         self._help = help
         self._description = description
@@ -257,16 +267,6 @@ class Command:
         self._subCommands = subCommands
 
         self._needUsb = needUsb
-
-        # Get a logger for logging our own command stuff
-        #
-        # This is distinct from the sans-formatting output a typical command
-        # will generate.
-        #
-        # We'll also isolate our logger from other loggers, since someone might
-        # library debugging output but still not want the boring command
-        # handling logging.
-        self.__logger = logging.getLogger(Command.LoggerNamespace + "." + self.__class__.__name__)
 
         self._stdout = None
 
