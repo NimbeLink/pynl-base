@@ -194,7 +194,7 @@ class Version:
         string = f"{self.base}"[1:]
 
         # If we have commits, include the commit count as the 'build'
-        if self.info is not None:
+        if (self.info is not None) and (self.info.commits is not None):
             string += f"+{self.info.commits}"
         else:
             string += "+0"
